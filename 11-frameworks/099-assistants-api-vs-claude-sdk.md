@@ -1,11 +1,11 @@
-# OpenAI Assistants API vs Anthropic Claude Agent SDK 对比
+# OpenAI Responses API / Agents SDK vs Anthropic Claude Agent SDK 对比
 
 > 难度：中级
 > 分类：Frameworks
 
 ## 简短回答
 
-OpenAI 和 Anthropic 分别推出了官方 Agent 开发方案，代表了两种不同的设计哲学。**OpenAI Agents SDK**（2025-03 发布，**底层基于新的 Responses API**——Responses API 才是 2025-08 deprecated 的 Assistants API 的直接替代者，Agents SDK 是其上层的轻量级编排框架）——核心概念仅三个：Agent（带指令和工具的 LLM）、Handoff（Agent 间任务交接）、Guardrails（输入/输出验证），强调"最小抽象、最大控制"，内置追踪但不强制托管状态；同时提供 **Python `openai-agents`** 与 **TypeScript `@openai/agents`** 双语言 SDK。**Anthropic Claude Agent SDK**（**2025-09** 从 `claude-code-sdk` 重命名而来，与 Claude Sonnet 4.5 同步发布）——基于 Claude Code 实战经验构建，核心特性：原生 MCP（Model Context Protocol）支持、Tool Permissions 细粒度授权、Subagent 派生、Hooks 机制，强调"工具优先"的 Agent 设计，与 MCP 生态深度绑定。关键差异：OpenAI SDK 是"模型无关的理想"但实际优化 OpenAI 模型；Claude SDK 明确绑定 Claude 模型但 MCP 是开放标准。OpenAI 走"SDK 轻+云重"路线（Responses API 在云端管理状态）；Anthropic 走"MCP 协议开放+SDK 原生集成"路线（MCP 连接万物）。选择建议：已在 OpenAI 生态 → Agents SDK；需要 MCP 工具生态 → Claude SDK；需要模型无关 → Vercel AI SDK 或自研。
+OpenAI 和 Anthropic 分别推出了官方 Agent 开发方案，代表了两种不同的设计哲学。**OpenAI Agents SDK**（2025-03 发布，**底层基于新的 Responses API**——Responses API 才是 2025-08 deprecated 的 Assistants API 的直接替代者，Agents SDK 是其上层的轻量级编排框架）——核心概念仅三个：Agent（带指令和工具的 LLM）、Handoff（Agent 间任务交接）、Guardrails（输入/输出验证），强调"最小抽象、最大控制"，内置追踪但不强制托管状态；同时提供 **Python `openai-agents`** 与 **TypeScript `@openai/agents`** 双语言 SDK。**Anthropic Claude Agent SDK**（**2025-09** 从 `claude-code-sdk` 重命名而来，与 Claude Sonnet 4.5 同步发布）——基于 Claude Code 实战经验构建，核心特性：原生 MCP（Model Context Protocol）支持、Tool Permissions 细粒度授权、Subagent 派生、Hooks 机制，强调"工具优先"的 Agent 设计，与 MCP 生态深度绑定。关键差异：OpenAI SDK 是"模型无关的理想"但实际优化 OpenAI 模型；Claude SDK 明确绑定 Claude 模型但 MCP 是开放标准。OpenAI 走"SDK 轻+云重"路线（Responses API 在云端管理状态）；Anthropic 走"MCP 协议开放+SDK 原生集成"路线（MCP 连接万物）。截至 2026.7，两条路线均已生产成熟：Claude Agent SDK 是 Claude Code 的运行时底座，配合 2026-06-30 发布的 Claude Sonnet 5（定位"最 agentic 的 Sonnet"，入门定价 $2/MTok 输入 / $10/MTok 输出）强化自主任务执行能力；MCP 生态同期爆发至 5500+ Server、约 80% Fortune 500 企业参与，使 Claude SDK 在工具密集型场景获得结构性优势。OpenAI Agents SDK 则依托 Responses API 的云端状态托管持续完善，但这也意味着更强的平台锁定。选择建议：已在 OpenAI 生态 → Agents SDK；需要 MCP 工具生态 → Claude SDK；需要模型无关 → Vercel AI SDK 或自研。
 
 ## 详细解析
 
@@ -101,7 +101,7 @@ from claude_agent_sdk import query, ClaudeAgentOptions
 # 1. 最简用法：直接 query()
 async def simple_example():
     options = ClaudeAgentOptions(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-5",
         system_prompt="你是一个数据分析助手。",
     )
     async for msg in query(prompt="分析 sales.csv 并给出 Top 3 趋势", options=options):
@@ -109,7 +109,7 @@ async def simple_example():
 
 # 2. 配置 MCP 工具服务器（真实 dict 结构，非 URL 列表）
 options = ClaudeAgentOptions(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-5",
     mcp_servers={
         # stdio 子进程式（最常见）
         "filesystem": {
@@ -130,7 +130,7 @@ options = ClaudeAgentOptions(
 
 # 3. Permission Mode（细粒度授权控制——这是真正的 HITL 机制）
 options = ClaudeAgentOptions(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-5",
     permission_mode="acceptEdits",  # 自动接受文件编辑
     # 可选值: "default" | "acceptEdits" | "bypassPermissions" | "plan"
     # plan 模式下 Agent 只规划不执行，必须人工 confirm 后才能 run
@@ -143,7 +143,7 @@ async def pre_tool_hook(tool_name: str, tool_input: dict):
     return {"deny": False}
 
 options = ClaudeAgentOptions(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-5",
     hooks={"PreToolUse": pre_tool_hook},
 )
 
@@ -151,7 +151,7 @@ options = ClaudeAgentOptions(
 # Claude SDK 没有静态的"sub_agents 列表"参数，而是运行时由主 Agent 决定派生
 # 主 Agent 调用 Task 工具时，会启动一个独立上下文的子 Claude 实例
 options = ClaudeAgentOptions(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-5",
     system_prompt="你是项目经理，可通过 Task 工具委派 researcher/coder/reviewer 子 Agent",
     allowed_tools=["Task", "Read", "Write"],
 )
@@ -198,7 +198,7 @@ key_differences = {
 ### 第三方替代方案
 
 ```
-除了官方 SDK，还有模型无关的选择：
+除了官方 SDK，还有模型无关或厂商生态的选择：
 
 ┌──────────────────┬───────────────────────────────────┐
 │ 方案             │ 特点                              │
@@ -206,11 +206,14 @@ key_differences = {
 │ Vercel AI SDK    │ 真正模型无关，支持 OpenAI/Claude/ │
 │                  │ Gemini，TypeScript 优先           │
 ├──────────────────┼───────────────────────────────────┤
-│ LangChain/       │ 最大生态，支持所有主流模型，      │
-│ LangGraph        │ 但抽象层较重                      │
+│ LangGraph        │ 1.0 GA（2025-10），durable agent  │
+│                  │ 首个稳定版，月 PyPI 下载超 3800 万│
 ├──────────────────┼───────────────────────────────────┤
-│ Semantic Kernel  │ 微软出品，.NET/Python，            │
-│                  │ 企业级，Azure 集成                 │
+│ Microsoft Agent  │ 2026-04 发布 1.0 GA，Azure 生态， │
+│ Framework        │ 企业级多 Agent 编排               │
+├──────────────────┼───────────────────────────────────┤
+│ Google ADK       │ Agent Development Kit，原生集成   │
+│                  │ A2A 协议 + Vertex AI Agent Engine │
 ├──────────────────┼───────────────────────────────────┤
 │ 自研             │ 完全控制，无依赖，                 │
 │                  │ 但需要自己处理所有细节             │
@@ -220,7 +223,9 @@ key_differences = {
 ├── 绑定 OpenAI → OpenAI Agents SDK
 ├── 绑定 Claude + 需要 MCP → Claude Agent SDK
 ├── 需要多模型 + TypeScript → Vercel AI SDK
-├── 需要复杂工作流 → LangGraph
+├── 需要复杂工作流/durable → LangGraph
+├── 绑定 Azure/微软生态 → Microsoft Agent Framework
+├── 绑定 Google Cloud/Gemini → Google ADK
 └── 需要完全控制 → 自研
 ```
 
@@ -242,16 +247,16 @@ key_differences = {
    └── Vercel AI SDK 或 LiteLLM + 自研 Agent Loop
 
 5. 企业级部署（Azure 基础设施）
-   └── Semantic Kernel + Azure OpenAI
+   └── Microsoft Agent Framework + Azure OpenAI
 ```
 
 ## 常见误区 / 面试追问
 
-1. **误区："Assistants API 和 Agents SDK 是一回事"，或"Agents SDK 是 Assistants API 的直接替代者"** — 实际三者关系是：(1) **Assistants API**（2023）是云端托管的有状态 API（Thread/Message/Run 模型），OpenAI 于 **2025-08 正式标记 deprecated**，**计划于 2026-08-26 关闭**；(2) **Responses API**（2025-03）才是 Assistants API 的**直接替代者**——同样云端管理状态，但 API 设计更现代；(3) **Agents SDK**（2025-03）是**基于 Responses API 的上层轻量级编排框架**，提供 Agent/Handoff/Guardrails 抽象。三者是分层关系：Assistants → Responses（API 层替代）→ Agents SDK（SDK 层编排）。
+1. **误区："Assistants API 和 Agents SDK 是一回事"，或"Agents SDK 是 Assistants API 的直接替代者"** — 实际三者关系是：(1) **Assistants API**（2023）是云端托管的有状态 API（Thread/Message/Run 模型），OpenAI 于 **2025-08-26 公告 deprecated**，**计划于 2026-08-26 关闭**（以 OpenAI 官方公告为准）；(2) **Responses API**（2025-03）才是 Assistants API 的**直接替代者**——同样云端管理状态，但 API 设计更现代；(3) **Agents SDK**（2025-03）是**基于 Responses API 的上层轻量级编排框架**，提供 Agent/Handoff/Guardrails 抽象。三者是分层关系：Assistants → Responses（API 层替代）→ Agents SDK（SDK 层编排）。
 
 2. **误区："选了一个 SDK 就不能用其他模型"** — OpenAI Agents SDK 的 `model_settings` 可以配置兼容 OpenAI API 格式的任何提供商。Claude Agent SDK 绑定 Claude，但 MCP 服务器可以被任何客户端使用。关键是区分"SDK 绑定"和"协议绑定"。
 
-3. **追问："MCP 会成为行业标准吗？"** — MCP 正在快速获得采纳：OpenAI、Google、微软都已宣布支持或兼容 MCP。它解决了"每个 Agent 框架都要自己实现工具集成"的 N×M 问题。但标准化需要时间，2025 年仍处于早期采纳阶段。
+3. **追问："MCP 会成为行业标准吗？"** — 截至 2026 年初，MCP 已从"Anthropic 提议的标准"成长为事实标准：PulseMCP 收录超 **5500 个 MCP Server**，约 **80% Fortune 500 企业**开始参与生态，OpenAI、Google、微软均已宣布支持或兼容 MCP。它解决了"每个 Agent 框架都要自己实现工具集成"的 N×M 问题。但 ACM 2026 学术研究也揭示了开发者痛点：文件系统操作问题占比最高（21.32%），其次是数据验证和类型问题——说明协议走向成熟的同时，工程实践仍在追赶。
 
 4. **追问："如果需要同时用 GPT 和 Claude 怎么办？"** — 推荐架构：(1) 使用 LiteLLM 或 Portkey 作为 Model Gateway，统一 API 接口；(2) 自研轻量 Agent Loop，不绑定任何特定 SDK；(3) MCP 作为工具层标准，与模型层解耦。核心思想是**模型层和工具层分离**。
 

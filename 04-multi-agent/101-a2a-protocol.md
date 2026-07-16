@@ -5,7 +5,7 @@
 
 ## 简短回答
 
-**A2A（Agent-to-Agent）** 是 Google 于 2025 年 4 月发布的开放协议，旨在让不同厂商、不同框架构建的 AI Agent 之间实现标准化通信与协作。2025 年 6 月由 Google 捐赠给 Linux Foundation 托管，目前已有 150+ 组织参与。协议自 v0.2.0 起将核心方法名从 `tasks/send` / `tasks/sendSubscribe` 重命名为 `message/send` / `message/stream`，自 v0.3.0（2025-07）起 Agent Card 路径从 `/.well-known/agent.json` 改为 `/.well-known/agent-card.json`（RFC 8615 合规），并新增 gRPC binding 与 Agent Card signing 支持。协议基于 **HTTP + JSON-RPC 2.0 + SSE** 构建，核心概念包括 **Agent Card**（服务发现）、**Task**（任务生命周期管理）、**Message** 和 **Artifact**（交互载体）。与 Anthropic 主导的 **MCP（Model Context Protocol）** 不同，MCP 解决的是 Agent 与 Tool 之间的纵向能力扩展（"Agent 如何调用工具"），A2A 解决的是 Agent 与 Agent 之间的横向协作（"Agent 如何委托另一个 Agent"）。两者定位互补——一个 Agent 可以同时用 MCP 连接工具、用 A2A 与其他 Agent 协作。
+**A2A（Agent-to-Agent）** 是 Google 于 2025 年 4 月发布的开放协议，旨在让不同厂商、不同框架构建的 AI Agent 之间实现标准化通信与协作。2025 年 6 月由 Google 捐赠给 Linux Foundation 托管，目前已有 150+ 组织参与。协议在版本演进中将核心方法名从 `tasks/send` / `tasks/sendSubscribe` 重命名为 `message/send` / `message/stream`，并将 Agent Card 路径从 `/.well-known/agent.json` 改为 `/.well-known/agent-card.json`（RFC 8615 合规），还新增了 gRPC binding 与 Agent Card signing 支持（具体版本号以 A2A 协议仓库最新版本为准）。协议基于 **HTTP + JSON-RPC 2.0 + SSE** 构建，核心概念包括 **Agent Card**（服务发现）、**Task**（任务生命周期管理）、**Message** 和 **Artifact**（交互载体）。与 Anthropic 主导的 **MCP（Model Context Protocol）** 不同，MCP 解决的是 Agent 与 Tool 之间的纵向能力扩展（"Agent 如何调用工具"），A2A 解决的是 Agent 与 Agent 之间的横向协作（"Agent 如何委托另一个 Agent"）。两者定位互补——一个 Agent 可以同时用 MCP 连接工具、用 A2A 与其他 Agent 协作。进入 2026 年，A2A 工具链快速成熟：Google 在开源的 Agent Development Kit（ADK）中原生支持 A2A，Agent 可直接部署到 Vertex AI Agent Engine，「MCP 管工具 + A2A 管 Agent 间协作」的双层标准格局基本成型。
 
 ## 详细解析
 
@@ -47,7 +47,7 @@ Google 联合 Atlassian、Salesforce、SAP 等 50+ 企业伙伴推出 A2A，目�
 
 #### 1. Agent Card（服务发现）
 
-每个 A2A Agent 在 `/.well-known/agent-card.json` 发布 Agent Card，声明能力和认证方式，类似 OpenAPI spec。注：v0.2.5 及更早版本使用 `/.well-known/agent.json` 路径，v0.3.0 起改为 `agent-card.json` 以符合 RFC 8615。
+每个 A2A Agent 在 `/.well-known/agent-card.json` 发布 Agent Card，声明能力和认证方式，类似 OpenAPI spec。注：早期版本使用 `/.well-known/agent.json` 路径，后改为 `agent-card.json` 以符合 RFC 8615（具体版本以 A2A 协议仓库最新版本为准）。
 
 #### 2. Task 生命周期
 
@@ -101,6 +101,37 @@ Task 是协议核心工作单元，有明确的状态机：
 | **类比** | 公司之间的合作协议 | 员工使用办公软件 |
 
 一句话概括：**MCP 让 Agent 变得更强（纵向），A2A 让 Agent 之间能合作（横向）**。
+
+### A2A 工具链与生态进展（2026）
+
+A2A 自 2025 年捐赠给 Linux Foundation 后，2026 年的核心进展集中在**工具链成熟化**和**与 MCP 的双层标准格局落地**：
+
+| 进展 | 说明 |
+|------|------|
+| **Google ADK 原生支持** | Google 开源的 Agent Development Kit（ADK）将 A2A 作为一等公民——用 ADK 构建 Agent 时，A2A Server / Client 能力开箱即用，无需手写 HTTP server、JSON-RPC 路由、Agent Card 生成、Task 状态机等样板代码 |
+| **Google Cloud 部署链路** | ADK 构建的 A2A Agent 可直接部署到 Vertex AI Agent Engine，获得托管运行环境，企业可直接接入云上扩缩容与可观测能力 |
+| **官方 Codelab** | Google 发布 Purchasing Concierge 等 Codelab，端到端演示多个 Agent 通过 A2A 协作完成购物代办场景 |
+| **A2A + MCP 双层标准** | 行业共识收敛为：**MCP 负责「Agent↔工具」纵向能力扩展，A2A 负责「Agent↔Agent」横向协作**——一个生产级 Agent 系统往往同时实现两套协议 |
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    生产级 Agent 系统                       │
+│                                                          │
+│   ┌──────────┐   A2A（横向协作）   ┌──────────┐          │
+│   │ Agent A  │◄═══════════════════►│ Agent B  │          │
+│   │ (ADK)    │                     │ (ADK)    │          │
+│   └────┬─────┘                     └────┬─────┘          │
+│        │ MCP（纵向工具）                │ MCP              │
+│        ▼                                ▼                │
+│   ┌──────────┐                     ┌──────────┐          │
+│   │ 工具/数据 │                     │ 工具/API │          │
+│   └──────────┘                     └──────────┘          │
+│                                                          │
+│   双层标准：A2A 管 Agent 间分工，MCP 管 Agent 与工具连接    │
+└──────────────────────────────────────────────────────────┘
+```
+
+> **为什么 ADK 原生支持是关键节点**：在 ADK 之前，实现一个合规的 A2A Agent 需要自行拼装协议层样板代码，准入门槛高；ADK 把这些沉淀为框架内置能力，使 A2A 从「协议规范」走向「可直接用于生产的工程平台」，是生态从"纸面标准"转向"规模化采用"的分水岭。
 
 ### Python 代码示例：A2A 交互模拟
 
@@ -250,11 +281,11 @@ if __name__ == "__main__":
 
 ## 常见误区 / 面试追问
 
-1. **误区："A2A 会取代 MCP"** — A2A 和 MCP 解决的是两个正交问题。MCP 是 Agent 连接工具和数据源的标准（纵向扩展能力），A2A 是 Agent 之间协作通信的标准（横向建立合作）。一个成熟的 Agent 系统往往同时需要两者：用 MCP 获取能力，用 A2A 实现分工协作。它们更像是 TCP 和 HTTP 的关系——不同层次、互相配合。
+1. **误区："A2A 会取代 MCP"** — A2A 和 MCP 解决的是两个正交问题。MCP 是 Agent 连接工具和数据源的标准（纵向扩展能力），A2A 是 Agent 之间协作通信的标准（横向建立合作）。一个成熟的 Agent 系统往往同时需要两者：用 MCP 获取能力，用 A2A 实现分工协作。它们更像是 TCP 和 HTTP 的关系——不同层次、互相配合。2026 年这一"双层标准"定位已成行业共识——Google ADK 同时内置 A2A 与 MCP 支持，一个 Agent 既是 A2A Server（对外暴露能力），又作为 MCP Client（调用工具）。
 
 2. **误区："A2A 只适用于同构 Agent"** — 恰恰相反，A2A 的核心设计目标就是让异构 Agent 互通。无论 Agent 基于 Claude、GPT 还是 Gemini，用 LangChain 还是自研框架，只要实现 A2A 协议就能互相协作。Agent Card 中的 skills 是语义级描述，而非实现级绑定。
 
-3. **追问："A2A 如何处理长时间运行的任务？"** — 三种机制：(1) **SSE 流式推送**——通过 `message/stream`（v0.2 前为 `tasks/sendSubscribe`）实时推送中间状态和增量结果；(2) **Push Notification**——客户端注册 webhook 回调，服务端在状态变更时主动通知，适合数小时级任务；(3) **Task 状态轮询**——通过 `tasks/get` 随时查询进度。三种机制覆盖秒级到天级的各种任务时长。
+3. **追问："A2A 如何处理长时间运行的任务？"** — 三种机制：(1) **SSE 流式推送**——通过 `message/stream`（早期版本为 `tasks/sendSubscribe`）实时推送中间状态和增量结果；(2) **Push Notification**——客户端注册 webhook 回调，服务端在状态变更时主动通知，适合数小时级任务；(3) **Task 状态轮询**——通过 `tasks/get` 随时查询进度。三种机制覆盖秒级到天级的各种任务时长。
 
 4. **追问："如何在 A2A 中实现身份验证和授权？"** — Agent Card 的 `authentication` 字段声明支持的认证方案。协议复用成熟的 Web 安全标准：**OAuth 2.0**（企业间协作首选）、**API Key**（内部系统）、**JWT Bearer Token**（无状态场景）。同时 Agent Card 的 `skills` 可设置权限级别，实现细粒度能力授权——如允许"查询"但禁止"修改"。
 
@@ -262,6 +293,9 @@ if __name__ == "__main__":
 
 - [A2A Protocol Specification (Google)](https://google.github.io/A2A/)
 - [Announcing the Agent2Agent Protocol (Google Cloud Blog)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/)
+- [Agent2Agent Protocol is getting an upgrade (Google Cloud, 2026)](https://cloud.google.com/blog/products/ai-machine-learning/agent2agent-protocol-is-getting-an-upgrade)
+- [Agent Development Kit 官方文档（原生集成 A2A）](https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/adk)
+- [Intro to A2A: Purchasing Concierge Codelab](https://codelabs.developers.google.com/intro-a2a-purchasing-concierge)
 - [A2A vs MCP: Understanding AI Agent Protocols (Composio)](https://composio.dev/blog/a2a-vs-mcp/)
 - [A2A GitHub Repository (google/A2A)](https://github.com/google/A2A)
 - [Model Context Protocol Specification (Anthropic)](https://modelcontextprotocol.io/)

@@ -184,6 +184,132 @@ async def call_tool(name: str, arguments: dict):
 
 MCP 已被主要 AI 平台采纳：OpenAI、Google DeepMind、Microsoft 均已支持。该协议由 Anthropic 主导，OpenAI / Google DeepMind / Microsoft 共同参与的 MCP Steering Committee 治理，规范文档在 [modelcontextprotocol.io](https://modelcontextprotocol.io/) 上维护。官方 SDK 覆盖 TypeScript、Python、C#、Kotlin、Go、Ruby 等语言，社区已有数千个开源 MCP Server 可直接使用。
 
+### MCP 生产化：从协议到生产级工具生态
+
+MCP 在 2025-2026 年完成了从"Anthropic 提议的开放标准"到"事实上的 AI-工具集成协议"的跃迁。这一节聚焦把 MCP 带入生产环境时必须回答的六个问题：生态规模、部署模式、认证授权、版本管理、安全沙箱、Server 选型。
+
+#### 生态规模与采用
+
+截至 2026 年初，PulseMCP 已收录超 **5500 个 MCP Server**，覆盖数据库、SaaS API、IDE、Git、文件系统等主流场景。据 Stacklok《State of MCP 2026》报告，约 **80% 的 Fortune 500 企业**已开始参与 MCP 生态（评估试点或内部部署）。官方 Roadmap 于 **2026-03-05 更新**，明确了下一阶段重点：认证增强、Elicitation（Server 向 Client 主动请求补充信息）、Registry（统一的 Server 注册与发现机制）。
+
+但生态爆发也带来工程挑战。ACM 2026 学术研究（对开发者痛点的实证分析）揭示：**文件系统操作问题占开发者反馈的 21.32%**，居首位；其次是数据验证和类型问题。这说明社区 MCP Server 的工程质量参差不齐，选型时不能只看功能列表——后文「Server 选型清单」展开。
+
+#### 生产部署模式：从本地 stdio 到远程托管
+
+MCP 的两种传输方式对应两种部署形态，生产环境的选择直接影响安全边界与运维成本：
+
+```
+三种部署模式对比：
+
+① 本地 stdio（开发 / 个人场景）
+   Host ──stdin/stdout──→ 本地 MCP Server 进程
+   优势：零网络开销，无需认证
+   劣势：Server 跑在用户机器上，无集中管控，版本碎片化
+
+② 远程 Streamable HTTP（生产 / 企业场景）
+   Host ──HTTPS──→ 远程 MCP Server（自建 / 云托管）
+   优势：集中管控、可观测、可弹性伸缩、统一认证
+   劣势：引入网络延迟与认证开销
+
+③ MCP Gateway / 托管平台（2026 趋势）
+   Host ──→ MCP Gateway ──→ ┌─ Server A（GitHub）
+                             ├─ Server B（Postgres）
+                             └─ Server C（内部 API）
+   优势：统一路由、认证、计费、限流、审计；Server 可动态挂载
+   典型平台：Cloudflare、Smithery 等已提供 MCP Server 托管
+```
+
+生产环境推荐远程 Streamable HTTP 部署（参见上文「通信协议」中 2025-03-26 规范引入的传输方式）：Server 集中托管，通过 Gateway 统一管理。这避免了在每个用户机器上部署 Server 带来的版本碎片化和安全风险，也是 [Tool Gateway 模式](024-tool-gateway-permissions.md)（`#024`）在 MCP 语境下的自然延伸。
+
+#### 认证授权：OAuth 2.1
+
+早期 MCP 协议不在传输层定义认证——认证完全由 Server 内部处理（Server 持有 API 密钥，Agent 不接触凭证）。这在本地 stdio 场景可行，但远程部署时暴露了核心问题：Server 如何安全地验证调用者身份、如何将工具操作绑定到具体用户？
+
+MCP 规范为 HTTP 传输引入了基于 **OAuth 2.1** 的授权框架，将 MCP Server 定位为 OAuth 中的 Resource Server：
+
+```
+MCP OAuth 授权流程（远程 Server）：
+
+Agent (Host/Client)
+  │
+  │ 1. 首次访问 MCP Server（无 Token）
+  │──→ 401 Unauthorized + WWW-Authenticate: Bearer
+  │
+  │ 2. 重定向到 Authorization Server（可由 Server 自托管或委托给 IdP）
+  │──→ 用户登录 + 授权同意
+  │←── Authorization Code
+  │
+  │ 3. 用 Code 换 Access Token
+  │──→ Token Endpoint（含 PKCE 校验）
+  │←── Access Token + Refresh Token
+  │
+  │ 4. 携带 Bearer Token 调用 MCP
+  │──→ Authorization: Bearer <token>
+  │←── 工具调用结果（权限受 Token scope 约束）
+```
+
+关键设计点：
+
+- **PKCE 强制**：OAuth 2.1 要求所有授权码流程使用 PKCE（Proof Key for Code Exchange），防止授权码被中间人截获
+- **动态客户端注册**：MCP 规范要求 Server 支持 RFC 7591 动态客户端注册，Client 无需预先硬编码 `client_id`，降低了首次连接的集成成本
+- **Token 作用域**：Access Token 携带 scope 声明，Server 据此决定暴露哪些工具——例如只读 Token 看不到 `delete_repo` 工具
+- **Server 身份验证**：规范引入资源标识（Resource Indicator）机制，Token 绑定到特定 Server，防止 Token 从一个 Server 窃取后在另一个 Server 重放
+
+> 注意：MCP 的 OAuth 框架解决的是「Client ↔ Server」的身份与授权问题。Server 背后的外部系统（如 GitHub API、数据库）的认证仍由 Server 自行管理——Server 是凭证的唯一持有者。
+
+#### 版本管理
+
+MCP 的版本管理分三层，理解这三层是保障生产稳定性的前提：
+
+| 层级 | 机制 | 变更影响 | 生产建议 |
+|------|------|---------|---------|
+| **协议版本** | `initialize` 握手时协商 | 不兼容版本会连接失败 | 升级 Server 前确认 Client 支持的目标版本 |
+| **能力声明** | Server 的 `capabilities` 字段 | Client 依赖的能力可能消失 | 下线能力前发 deprecation 通知 |
+| **工具 Schema** | `tools/list` 返回的 `inputSchema` | Agent 调用时参数不匹配 | **最常见破坏源**，需版本化处理 |
+
+工具 Schema 变更是线上事故的高频来源。推荐做法：给工具加版本后缀（如 `create_issue_v2`），旧工具保留过渡期后再下线。**避免直接修改已有工具的参数结构**——Agent 在长会话中可能已"记住"旧签名，Schema 突变会导致调用失败或参数幻觉。Server 端可通过 `notifications/tools/list_changed` 通知 Client 重新拉取，但 Client 是否及时刷新取决于实现。
+
+#### 安全沙箱与治理
+
+MCP 的开放性——任何人都能发布 Server——使得 Server 治理成为生产化的核心议题。这与 [工具使用安全](030-tool-use-security.md)（`#030`）和 [权限最小化与沙箱执行](../09-safety-and-alignment/081-least-privilege-sandboxing.md)（`#081`）讨论的原则一脉相承，MCP 场景下的具体风险与对策如下：
+
+```
+MCP Server 生产安全风险全景：
+
+风险                           对策
+────────────────────────────────────────────────────────────
+Tool Poisoning                 Server 签名验证 + 来源白名单
+（恶意 Server 注册伪装工具）       只从可信 Registry 或内部仓库加载
+
+Confused Deputy                最小权限 + 高危操作 HITL 确认
+（被 Prompt Injection 诱导越权）    删除/转账等操作需二次人工确认
+
+凭证泄露                       OAuth 替代静态 API Key
+（API Key 随 Server 分发流转）     Token 有 scope + 过期 + 可撤销
+
+数据外泄                       出口网络白名单 + 审计日志
+（Server 偷偷外传敏感数据）        每个 Server 只允许访问必要域名
+```
+
+生产级部署应将每个 MCP Server 运行在独立沙箱中（容器或微 VM），限制其文件系统访问范围、网络出口和资源配额。沙箱选型可参考 [Agent Sandbox / Runtime 选型](../10-production-and-deployment/112-agent-sandbox-runtime.md)（`#112`）中的隔离强度对比。
+
+对于企业级治理，官方 Roadmap 中的 **MCP Registry** 将提供 Server 的可信发布与签名验证，类似 npm / PyPI 的包管理机制。在 Registry 成熟前，企业应维护内部 Server 白名单并定期审计其权限范围。
+
+#### Server 选型清单
+
+面对 5500+ Server，选型时建议逐项评估以下维度：
+
+| 维度 | 关键问题 | 红旗信号 |
+|------|---------|---------|
+| **来源可信度** | 是否来自官方或知名组织？有无代码签名？ | 个人匿名仓库、无文档、无测试 |
+| **权限范围** | 请求了哪些权限？是否遵循最小化原则？ | 要求全盘文件系统访问、全局 admin token |
+| **维护活跃度** | 最后更新时间？Issue 响应速度？ | 超 6 个月未更新、大量 Issue 无人回应 |
+| **Token 成本** | 暴露多少工具？Schema 总体积多大？ | 单 Server >15 个工具（参见上文 Token 膨胀数据） |
+| **传输安全** | 远程 Server 是否启用 TLS？有无认证？ | 明文 HTTP、无 OAuth、静态 Key 明传 |
+| **可观测性** | 是否记录调用日志？是否支持 trace？ | 无日志、无可观测接口、黑盒运行 |
+
+**选型原则**：优先选择官方维护或社区高信誉的 Server；涉及内部数据的场景应自建 Server 而非依赖第三方；同时连接的 Server 数量控制在 2-3 个以内——超过后工具选择准确率显著下降（参见上文「问题 3：工具选择混乱」）。动态工具发现（`#029`）和 MCP 的 `tools/list` 协议让运行时挂载变得容易，但"能挂"不等于"该挂"。
+
 ### MCP vs Claude Skills：连接性 vs 方法论
 
 Anthropic 在 2025 年 10 月推出了 **Claude Skills**——这是一种与 MCP 互补但**架构哲学完全不同**的扩展机制。理解两者关系是 2025-2026 年 Agent 工程师的高频面试点。
@@ -314,7 +440,7 @@ MCP 的 JSON-RPC over stdio 是黑盒。可以使用 `npx @modelcontextprotocol/
 
 3. **追问："MCP 的安全隐患是什么？"** — 主要风险包括：Tool Poisoning（恶意 Server 注册伪装工具）、Prompt Injection 通过工具结果注入、凭证通过 MCP 通道泄露。防御方法包括 Server 签名验证、工具白名单、输出清洗。
 
-4. **追问："MCP 如何处理认证？"** — MCP 本身不定义认证机制（它是传输层协议）。认证通常在 MCP Server 内部处理——Server 持有 API 密钥并负责与外部服务的认证，Agent 不直接接触凭证。
+4. **追问："MCP 如何处理认证？"** — 协议规范层不强制定义认证（它是传输层协议），认证通常在 MCP Server 内部处理——Server 持有 API 密钥并负责与外部服务的认证，Agent 不直接接触凭证。但生产级远程实现普遍采用 OAuth 2.1（见上文『MCP 生产化』小节的认证授权部分）。
 
 5. **追问："MCP 的 Token 膨胀问题如何解决？"** — 三种策略：最有效的是 Code Execution 模式（将工具暴露为代码 API，token 从 ~150k 降至 ~2k）；其次是渐进式披露（按需加载相关工具）和最小化 Schema（精简描述）。
 

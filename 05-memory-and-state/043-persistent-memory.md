@@ -177,6 +177,115 @@ class MemoryLifecycle:
                 await self.delete(mem.id)  # 低权重且很少访问 → 遗忘
 ```
 
+### 用户偏好学习：从"记住事实"到"了解用户"
+
+前面的记忆生命周期解决的是"记什么、忘什么"，而**用户偏好学习**（User Preference Learning）更进一步——让 Agent 像人类助手一样"了解用户"：记住用户的习惯、风格偏好和工作方式，并在后续会话中自动适配。这是持久化记忆最高价值的应用场景之一。
+
+偏好的提取-存储-检索复用上文的记忆生命周期管线（提取 → 去重 → 衰减 → 整合），难点在于偏好自身的特性——它常是隐式的、且会随时间漂移：
+
+```python
+preference_types = {
+    "explicit":  ["请用中文回复", "代码示例用 Python"],        # 用户直接说出的，一次提取即可
+    "implicit":  ["用户总追问技术细节 → 偏好深度分析",          # 从行为推断，需要归纳
+                  "多次选方案 A 而非 B → 偏好某种技术栈"],
+    "evolving":  ["三个月前用 React → 最近开始学 Vue"],        # 随时间变化，需要持续追踪
+}
+```
+
+针对隐式归纳和漂移追踪这两个难点，前沿研究给出三条路径：PAMU 负责感知偏好变化、动态画像负责结构化聚合、Memory-R1 则用 RL 把记忆操作本身学出来。
+
+#### PAMU：偏好感知记忆更新
+
+普通记忆系统对偏好的处理是"提取一次、存一次"，但**用户偏好不是静态的**。[PAMU](https://arxiv.org/html/2510.09720)（Preference-Aware Memory Update，偏好感知记忆更新）专门解决偏好变化的追踪问题——它用**滑动窗口平均**捕捉短期波动，用**指数移动平均（EMA）**捕捉长期趋势，再融合两路信号检测偏好漂移：
+
+```python
+class PreferenceAwareMemory:
+    """PAMU: 融合短期波动和长期趋势"""
+
+    def __init__(self, alpha=0.3):
+        self.alpha = alpha  # EMA 平滑因子
+
+    def update_preference(self, user_id, new_signal):
+        # 滑动窗口平均（捕捉短期变化）
+        sw_avg = self.sliding_window_average(
+            self.recent_signals[user_id], window=5
+        )
+        # 指数移动平均（捕捉长期趋势）
+        ema = self.ema_values.get(user_id, new_signal)
+        ema = self.alpha * new_signal + (1 - self.alpha) * ema
+        self.ema_values[user_id] = ema
+        # 融合两种信号
+        fused = 0.6 * ema + 0.4 * sw_avg
+        # 检测偏好变化
+        if self.detect_shift(user_id, fused):
+            self.trigger_adaptation(user_id, fused)
+
+    def detect_shift(self, user_id, current):
+        """检测渐变和突变两种偏好漂移"""
+        history = self.preference_history[user_id]
+        # 突变：当前值与历史均值偏差超过 2σ
+        if abs(current - np.mean(history)) > 2 * np.std(history):
+            return True
+        # 渐变：最近 5 个值连续单调上升
+        recent = list(history[-4:]) + [current]
+        if len(recent) >= 5 and all(
+            recent[i] < recent[i + 1] for i in range(len(recent) - 1)
+        ):
+            return True
+        return False
+```
+
+PAMU 的"渐变 + 突变"双检测比单纯的时间衰减更精细——衰减只回答"要不要遗忘"（见 [#048 记忆的遗忘与更新机制](./048-memory-forgetting-updating.md)），PAMU 还要回答"偏好是不是变了、要不要主动适配"。
+
+#### 动态用户画像构建
+
+偏好项是零散的，**动态用户画像**（Dynamic User Profile）把它们聚合成一个持续演进的结构化档案——技术水平、偏好语言、沟通风格、领域专长等字段初始为 `unknown`，随每次交互逐步具化：
+
+```python
+class DynamicUserProfile:
+    """动态演进的用户画像"""
+
+    def __init__(self, user_id):
+        self.profile = {
+            "user_id": user_id,
+            "technical_level": "unknown",
+            "preferred_language": "unknown",
+            "communication_style": "unknown",
+            "domain_expertise": [],
+            "last_updated": None,
+        }
+
+    async def evolve(self, new_interaction):
+        """每次交互后用 LLM 更新画像"""
+        prompt = f"""
+        当前用户画像：{json.dumps(self.profile)}
+        最新交互：{new_interaction}
+        请更新用户画像。规则：
+        1. 只更新有明确证据支持的字段
+        2. 将 "unknown" 更新为具体值
+        3. 如果新信息与旧画像矛盾，以新信息为准
+        4. 不要凭猜测填充字段
+        """
+        self.profile = await llm.invoke(prompt)
+```
+
+关键纪律是"有证据才更新"——画像填充必须基于真实交互证据，而非 LLM 臆测，否则错误画像会污染后续所有个性化决策。
+
+#### Memory-R1：用 RL 学习记忆操作策略
+
+前面所有的提取/更新/遗忘逻辑都是**人工写死的规则**。[Memory-R1](https://arxiv.org/abs/2508.19828) 把记忆管理建模为显式的动作空间，用强化学习训练 Memory Manager 学习最优操作策略：
+
+| 动作 | 含义 | 作用 |
+|------|------|------|
+| `ADD` | 新增记忆 | 写入新事实/偏好 |
+| `UPDATE` | 修改已有记忆 | 偏好变化时覆盖旧值 |
+| `DELETE` | 删除记忆 | 清除过时或错误信息 |
+| `NOOP` | 不操作 | 当前事件不值得改动记忆库 |
+
+其中 `NOOP` 尤为关键——它避免 Agent 对无信息量的对话强行写入噪声，是记忆库质量的"守门员"。Memory-R1 把 Memory Manager（学上述 4 个动作）和 Answer Agent（学检索与推理）联合训练，**仅用 152 条训练样本**即在多个长期记忆基准上超越 Mem0 等强基线。
+
+这印证了一个趋势：记忆管理的下一站不是更复杂的启发式规则，而是像 [#103 Agentic-RL 与 GRPO](../06-planning-and-reasoning/103-agentic-rl-grpo.md) 那样用 RL 让 Agent 自己学会"记什么、改什么、忘什么"。偏好学习场景尤其受益——隐式偏好的归纳、进化偏好的漂移检测，本质上都是难以手写规则、适合 RL 优化的决策问题。
+
 ### 记忆检索优化策略
 
 写入容易，**检索**才是 Memory 系统能不能用的胜负手。Mem0 论文（arXiv 2504.19413）和 MemMachine 的消融实验都表明：**检索阶段的优化（+4.2%）远比摄入阶段（+0.8%）影响大**。下面是工业界主流的 4 个优化方向。

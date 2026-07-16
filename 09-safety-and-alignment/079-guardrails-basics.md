@@ -228,6 +228,68 @@ class AgentGuardrails:
 └─────────────────────┴──────────────────────────────────┘
 ```
 
+### 毒性检测与内容过滤
+
+前面的护栏是通用安全机制，而**毒性检测（Toxicity Detection）与内容过滤（Content Filtering）**是其中最专门的子领域——针对暴力、仇恨、色情、自伤等有害内容做实时拦截。它有两个关键技术点值得单独讲：**用什么模型**（开源安全模型横评）和**怎么编排**（多层级联架构）。
+
+#### 开源安全模型横评
+
+过去做毒性检测多依赖商业 API（如 Perspective API），2025 年起开源安全模型已达到商用水准，可本地部署、自定义策略、不外泄数据：
+
+| 模型 | 来源 | 参数规模 | 核心能力 | 特色 |
+|------|------|---------|---------|------|
+| **Llama Guard 3** | Meta | 8B | 多类别安全分类（暴力、色情、仇恨、自伤等） | 可自定义安全策略，生态成熟 |
+| **ShieldGemma** | Google | 2B / 9B | 输入输出双向安全过滤 | 与 Gemma 生态集成，提供多档位 |
+| **Granite Guardian** | IBM | 3B | 安全分类 + RAG 幻觉检测 | 兼顾内容安全与事实性（呼应 [#082 — 幻觉检测](082-hallucination-detection.md)） |
+| **Granite HAP** | IBM | 38M | Hate / Abuse / Profanity 检测 | 极轻量，毫秒级实时检测 |
+
+选型建议：需要多类别精细分类且可微调，选 Llama Guard 3；要兼顾幻觉检测，选 Granite Guardian；只做基础脏话/仇恨过滤且对延迟敏感，选 Granite HAP 这类轻量分类器。
+
+#### 多层级联架构
+
+单靠一个模型很难同时做到"快、准、便宜"，生产系统的最佳实践是**级联（Cascading）**——按成本由低到高分层，前一层挡住的就不进下一层：
+
+```python
+class CascadingContentFilter:
+    """多层级联过滤——平衡速度、准确性和成本"""
+
+    async def filter(self, text, context=None):
+        # Layer 1: 规则过滤（< 1ms）——挡掉明显违规
+        if self.rule_filter.filter(text)["blocked"]:
+            return {"blocked": True, "layer": "rule"}
+
+        # Layer 2: 轻量分类器 Granite HAP（~10ms）——处理常见毒性
+        hap = await self.hap_classifier.classify(text)
+        if not hap["safe"] and hap["confidence"] > 0.9:
+            return {"blocked": True, "layer": "hap"}
+
+        # Layer 3: 安全大模型 Llama Guard（~100ms）——仅处理灰区样本
+        if not hap["safe"]:  # confidence < 0.9 的不确定样本
+            guard = await self.llama_guard.classify(text)
+            if not guard["safe"]:
+                return {"blocked": True, "layer": "llm_guard"}
+
+        # Layer 4: LLM 上下文审核（~500ms）——仅高风险场景
+        if context and context.risk_level == "high":
+            moderator = await self.llm_moderator.moderate(text, context)
+            if not moderator["safe"]:
+                return {"blocked": True, "layer": "moderator"}
+
+        return {"blocked": False}
+
+    # 生产统计：~95% 请求在 Layer 1-2 决出（< 10ms）
+    #           ~4% 在 Layer 3 决出（~100ms）
+    #           ~1% 才需 Layer 4（~500ms）
+```
+
+这与前文"规则型做第一道门、模型型做第二道门"是同一思路的深化——把模型型再细分成**轻量分类器 → 安全大模型 → 通用 LLM** 三档，按需逐级升级。其中第 4 层的 LLM 上下文审核本质是 [LLM-as-Judge](../08-evaluation/071-llm-as-judge.md) 在安全场景的应用，能理解"医疗讨论中的'注射'不是暴力"这类上下文，但成本最高，只在高风险场景启用。
+
+#### 反直觉实证：38M 小分类器的召回率优于通用 LLM
+
+一个常被引用的发现：在**边界清晰的毒性分类任务**上，传统轻量 NN 分类器（Granite HAP，仅 38M 参数）的召回率显著优于 8B 参数 LLM 的 in-context learning——**0.96 vs 0.78**，且计算成本低一个数量级。
+
+由此得出一条选型原则：**分类任务别盲目上大模型**。对于类别固定的检测（脏话、仇恨言论、PII），专用小模型更快、更准、更便宜；LLM 的优势在于需要上下文理解的灰区判断（隐喻、双关、跨文化差异），这正是级联架构把 LLM 放在最后一层的原因。
+
 ## 常见误区 / 面试追问
 
 1. **误区："护栏会让 Agent 变得很慢"** — 规则型护栏（正则、关键词）延迟通常 < 5ms，几乎无感。模型型护栏延迟较高（100-500ms），但可以异步执行（先返回结果，后台评估并在发现问题时追回）。关键是选择合适的护栏组合。
