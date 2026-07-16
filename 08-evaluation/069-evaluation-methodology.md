@@ -395,6 +395,106 @@ class ProductionAgentEvaluator:
         return self.aggregate(results)
 ```
 
+### 十二、推理过程评估（Reasoning Process Evaluation）
+
+前面的章节主要评估「Agent 做了什么」（结果、轨迹、工具），这一节深入「Agent 是怎么想的」——即**推理过程本身的质量**。这部分内容整合自 #057（#057 原文已并入本节），聚焦四个进阶问题：过程 vs 结果奖励、推理忠实性、推理质量的层次、基于 Trace 的自动诊断规则。
+
+#### 1. 推理质量的层次模型
+
+与第八节「Agent 评估的四层模型」（按评估对象横向划分为结果/轨迹/工具/鲁棒性）互补，这里给出一个**自下而上的推理深度层次**——从单步逻辑一直到任务完成：
+
+```
+Level 4: 任务完成度        "Agent 是否完成了用户的请求？"
+    ↑
+Level 3: 推理路径质量      "推理过程是否高效、合理、有无弯路？"
+    ↑
+Level 2: 工具使用合理性    "是否选对了工具？参数是否正确？"
+    ↑
+Level 1: 单步推理正确性    "每一步推理是否逻辑正确？"
+```
+
+关键认知：**结果正确 ≠ 过程正确**。一个 Agent 可能因为错误的推理偶然得到正确答案（right answer, wrong reason），只看 Level 4 会高估其推理能力。只有 Level 1–3 同时成立，结果才可靠、可复现。这也解释了为什么纯结果评估（ORM）会漏掉「答案对但推理错」的案例——必须配合过程评估。
+
+#### 2. PRM vs ORM：过程奖励 vs 结果奖励
+
+这是「过程评估 vs 结果评估」在打分与训练层面的核心范式之争。
+
+| 维度 | ORM（Outcome Reward Model） | PRM（Process Reward Model） |
+|------|-----------------------------|------------------------------|
+| 评估对象 | 只看最终答案是否正确 | 对推理过程的**每一步**打分 |
+| 错误定位 | 无法定位错误在哪一步 | 精确定位**第一个**出错的步骤 |
+| 实现成本 | 低（一次打分） | 高（每步都要打分，需逐步标注） |
+| 适合场景 | 大规模自动评估、初筛 | 训练奖励信号、调试、争议案例深挖 |
+| 典型盲区 | right-answer-wrong-reason 被漏掉 | 标注成本高，难以全量铺开 |
+
+```python
+class ProcessRewardModel:
+    """对推理过程的每一步打分（PRM）"""
+
+    def evaluate_reasoning(self, problem, reasoning_steps):
+        step_scores = []
+        for i, step in enumerate(reasoning_steps):
+            score = self.prm_model.score(
+                problem=problem,
+                previous_steps=reasoning_steps[:i],
+                current_step=step,
+            )
+            step_scores.append({"step": i + 1, "score": score, "ok": score > 0.5})
+        return step_scores
+
+    # 示例：一道算术题的逐步打分
+    # Step 1: "总共有 15 × 20 = 300 个苹果"  → score 0.95 ✓
+    # Step 2: "卖掉了 120 个"                → score 0.90 ✓
+    # Step 3: "剩余 300 + 120 = 420 个"      → score 0.05 ✗（应为减法）
+    # ORM 只看到最终答案 420 错 → 知道错，但不知道错在哪步
+    # PRM 能精确定位 Step 3 的运算符号错误
+```
+
+实践建议：**两者结合**——ORM 做初筛（便宜、全量），PRM 对失败或争议案例做深入分析（贵、精准）。在 Agentic-RL 训练中，PRM 提供的逐步奖励信号比 ORM 更能稳定提升推理能力（参见 [#103](../06-planning-and-reasoning/103-agentic-rl-grpo.md)）。
+
+#### 3. Faithfulness：推理忠实性评估
+
+**忠实性（Faithfulness）** 指推理链是否**真实反映了模型的决策过程**，而非事后合理化（rationalization）——即模型可能先得出答案，再编造一条看似合理的推理链来「解释」这个答案。这样的推理链是「装饰性」的而非「功能性的」，会让评估者误以为模型具备它实际上并不具备的推理能力。
+
+核心检测思路是**干预法（intervention）**：篡改推理链中的某个关键步骤，看最终答案是否随之改变。
+
+```python
+def check_faithfulness(model, problem, original_reasoning):
+    """忠实性检测：改掉关键步骤，看答案是否真的依赖它"""
+    # 1. 原始推理链及其答案
+    original_answer = model.solve(problem, reasoning_hint=original_reasoning)
+
+    # 2. 篡改中间某个关键步骤（如把中间计算结果改错）
+    tampered = tamper_step(original_reasoning, step_idx=3, new_value="999")
+
+    # 3. 答案若不变 → 模型并未真正依赖这条推理链 → 不忠实
+    tampered_answer = model.solve(problem, reasoning_hint=tampered)
+    is_faithful = original_answer != tampered_answer
+    return is_faithful
+```
+
+判定逻辑：**篡改关键步骤后答案若不变，说明模型没有真正「使用」这条推理链**——它是装饰性的。OpenAI 的 CoT Monitorability 研究正系统性地探索思维链在多大程度上能被忠实监控；这与推理模型（[#055](../06-planning-and-reasoning/055-reasoning-models.md)）的可解释性直接相关——如果一个推理模型的 CoT 不可忠实监控，那么基于 CoT 的安全审查就形同虚设。
+
+#### 4. 基于 Trace 的生产诊断规则
+
+生产环境里不可能逐条人工审推理，通常把推理与工具调用记录成 Trace（Span 级别，参见 [#074](074-traces-and-spans.md)），再用一组**启发式规则**自动标红异常轨迹。这组规则是对第十一节「生产环境指标」的补充——前者回答「指标是多少」，这里回答「什么模式说明出了问题」：
+
+```python
+# Trace 自动评估规则：命中即标记为可疑轨迹
+trace_alert_rules = {
+    "循环推理": "推理步骤数 > 阈值 → 可能陷入循环 / 来回兜圈",
+    "工具滥用": "同一工具连续调用 > 3 次 → 可能在重试无效操作",
+    "策略失误": "工具调用失败率 > 30% → 工具选择策略有问题",
+    "效率异常": "总 token 消耗远超同类任务均值 → 推理效率低",
+}
+
+# 典型工具栈：Langfuse / LangSmith / Arize Phoenix
+# 这些平台原生支持 Span 属性（输入/输出/延迟/token）与父子关系，
+# 上述规则可配置为告警阈值，无需手写轮询逻辑。
+```
+
+这四条规则分别对应推理过程的四类隐患——循环、重试、选型、开销——它们在生产监控中往往比「最终答案对不对」更早暴露问题，也更适合接入持续评估流水线（[#077](077-continuous-evaluation-pipeline.md)）。
+
 ## 常见误区 / 面试追问
 
 1. **误区："BLEU/ROUGE 分数高就说明质量好"** — 这些指标只衡量表面词汇重叠，无法评估语义正确性、逻辑合理性和实用性。两个语义相同但措辞不同的回答可能得到很不同的 BLEU 分数。LLM 时代这些传统指标的参考价值有限。

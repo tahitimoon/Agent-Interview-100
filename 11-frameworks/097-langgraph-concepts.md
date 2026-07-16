@@ -5,7 +5,7 @@
 
 ## 简短回答
 
-LangGraph 是 LangChain 生态中专门用于构建**有状态、多步骤 Agent 工作流**的框架，于 2025 年 10 月发布 1.0 稳定版，被称为"Agent 编排的 React"。其核心思想是将 Agent 的执行流程建模为一个**有向图（Graph）**，包含三个基本构建块：(1) **State（状态）**——图的共享记忆，是一个 TypedDict，所有节点通过读写 State 来传递信息，支持 Reducer 函数自定义状态合并逻辑（如消息列表追加而非覆盖）；(2) **Node（节点）**——图中的"工作单元"，每个节点是一个 Python 函数，接收当前 State 并返回 State 更新（可以是 LLM 调用、工具执行、条件判断等任何操作）；(3) **Edge（边）**——连接节点的"路由器"，分为普通边（固定路由）和条件边（基于 State 动态路由，实现分支逻辑）。LangGraph 还提供 **Checkpointer（检查点）** 实现状态持久化，支持 Human-in-the-Loop（`interrupt()` 暂停等待人工审批）、错误恢复、长时间任务。执行模型是"超步骤（Super-step）"——每个超步骤中并行执行所有就绪节点，然后同步 State，直到到达 END 节点。
+LangGraph 是 LangChain 生态中专门用于构建**有状态、可恢复（durable）的多步骤 Agent 工作流**的框架，于 2025 年 10 月 22 日发布 1.0 GA，成为 durable agent（持久化 Agent）框架领域首个稳定版本，月 PyPI 下载量超 3800 万（2026），被称为"Agent 编排的 React"。1.0 GA 之后，2026 Q2 更新进一步补齐生产级能力：**per-node 超时**（逐节点设置执行时限，防止单步卡死拖垮整图）、**v2 streaming**（新一代结构化流式输出，配合 DeltaChannel 实现增量推送）；LangChain 侧也同步重构，聚焦核心 agent loop 并引入 **middleware**（中间件）概念，便于统一拦截、改写请求与响应。其核心思想是将 Agent 的执行流程建模为一个**有向图（Graph）**，包含三个基本构建块：(1) **State（状态）**——图的共享记忆，是一个 TypedDict，所有节点通过读写 State 来传递信息，支持 Reducer 函数自定义状态合并逻辑（如消息列表追加而非覆盖）；(2) **Node（节点）**——图中的"工作单元"，每个节点是一个 Python 函数，接收当前 State 并返回 State 更新（可以是 LLM 调用、工具执行、条件判断等任何操作）；(3) **Edge（边）**——连接节点的"路由器"，分为普通边（固定路由）和条件边（基于 State 动态路由，实现分支逻辑）。LangGraph 还提供 **Checkpointer（检查点）** 实现状态持久化，支持 Human-in-the-Loop（`interrupt()` 暂停等待人工审批）、错误恢复、长时间任务。执行模型是"超步骤（Super-step）"——每个超步骤中并行执行所有就绪节点，然后同步 State，直到到达 END 节点。
 
 ## 详细解析
 
@@ -203,6 +203,18 @@ def sensitive_action(state: AgentState) -> dict:
 # 4. 时间旅行——回滚到任意历史状态
 ```
 
+### 1.0 GA 与 2026 生产化新特性
+
+LangGraph 1.0 GA（2025-10-22）的标志性意义在于把"durable agent"从实验概念确立为**生产标准**——凭借 Checkpointer 持久化 + 超步骤执行模型，Agent 进程可在任意超步骤崩溃后从最近检查点恢复，长时任务不再依赖进程常驻。2026 Q2 更新围绕"生产可控性"补齐了三块关键能力：
+
+| 特性 | 解决的问题 | 要点 |
+|------|-----------|------|
+| **per-node 超时** | 单个节点（如一次外部 API 调用、一段 LLM 推理）卡死会拖垮整图 | 在节点粒度声明执行时限，超时自动中断并触发重试或错误分支，与 `retry_policy`、`interrupt()` 组合形成分级容错 |
+| **v2 streaming** | 旧版 streaming 只能拿到最终结果或粗粒度 token 流，难以按结构化事件增量消费 | 新一代流式接口按节点输出粒度增量推送，配合 **DeltaChannel** 只下发状态变更部分（delta），降低流式场景的带宽和延迟 |
+| **middleware（中间件）** | 横切逻辑（日志、鉴权、改写请求/响应）散落在各节点难以维护 | LangChain 侧引入 middleware 概念，统一拦截 agent loop 的请求与响应，便于插拔可观测、限流、审计等横切关注点 |
+
+> 选型提示：1.0 GA 之前，"超时""流式增量""横切拦截"这些生产刚需大多要手写 wrapper 绕行；1.0 GA + 2026 Q2 后已转为框架一等能力，自研编排层前应先核对 LangGraph 是否已覆盖，避免重复造轮子。
+
 ### 完整 ReAct Agent 示例
 
 ```python
@@ -238,6 +250,7 @@ result = agent.invoke(
 
 # 注：create_agent 底层仍是 LangGraph 图；旧版 create_react_agent 在 v1.x 仍可用
 # 但官方明确建议新代码使用 langchain.agents.create_agent
+# 1.0 GA 后可通过 middleware 参数挂载日志/鉴权/改写等横切逻辑，无需侵入节点函数
 ```
 
 ## 常见误区 / 面试追问
@@ -248,10 +261,13 @@ result = agent.invoke(
 
 3. **追问："LangGraph 的执行模型是什么？"** — "超步骤（Super-step）"模型：每个超步骤中，所有没有未满足依赖的节点并行执行，执行完毕后同步 State，然后进入下一个超步骤。这类似于 Pregel 图计算模型（Google 的大规模图处理框架）。
 
-4. **追问："LangGraph 如何处理错误？"** — 三层错误处理：(1) 节点内 try/catch 处理预期错误；(2) Checkpointer 支持从失败点重试（不丢失已完成步骤）；(3) Graph 级别的 `retry_policy` 配置自动重试策略。结合 `interrupt()` 还可以在错误时暂停并请求人工介入。
+4. **追问："LangGraph 如何处理错误？"** — 三层错误处理：(1) 节点内 try/catch 处理预期错误；(2) Checkpointer 支持从失败点重试（不丢失已完成步骤）；(3) Graph 级别的 `retry_policy` 配置自动重试策略。结合 `interrupt()` 还可以在错误时暂停并请求人工介入。1.0 GA 后还可在节点粒度配 **per-node 超时**，单步卡死时自动中断并走重试/错误分支，避免拖垮整图。
+
+5. **追问："什么是 durable agent？LangGraph 为什么适合生产部署？"** — Durable agent 指 Agent 执行状态可持久化、崩溃后可从检查点恢复、长时任务不依赖进程常驻。LangGraph 靠 Checkpointer（每完成一个超步骤就落盘状态）实现这一点，2026 Q2 又补齐了 per-node 超时（防单步卡死）和 v2 streaming / DeltaChannel（增量流式输出）。这也是它月下载量超 3800 万、成为 durable agent 框架首个 GA 版本的核心原因。面试可顺势对比：纯内存编排（如裸 ReAct 循环）一旦进程退出则全部状态丢失，生产场景必须上 durable 化方案。
 
 ## 参考资料
 
+- [LangChain & LangGraph 1.0 (Official Announcement)](https://www.langchain.com/blog/langchain-langgraph-1dot0)
 - [LangGraph Overview (Official Docs)](https://docs.langchain.com/oss/python/langgraph/overview)
 - [A Beginner's Guide to LangGraph: Core Concepts (Medium)](https://medium.com/@ajaykumargajula7/a-beginners-guide-to-langgraph-understanding-the-core-concepts-bc2b1011d675)
 - [Mastering AI Agent Systems with LangGraph in 2025 (Towards AI)](https://pub.towardsai.net/from-single-brains-to-team-intelligence-mastering-ai-agent-systems-with-langgraph-in-2025-3520af4fc758)

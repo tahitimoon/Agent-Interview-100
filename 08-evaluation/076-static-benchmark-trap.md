@@ -5,7 +5,7 @@
 
 ## 简短回答
 
-静态 Benchmark 的核心陷阱是**高分 ≠ 高能力**——模型在固定测试集上的高准确率可能源于数据泄露（训练集包含测试题）、过拟合基准（针对基准优化而非真实能力提升）、以及**分布偏移**（基准的任务分布与生产环境不同）。2025 年业界观察到"**大脱钩**（The Great Decoupling）"现象：MMLU 80%+ 的分数对预测生产表现几乎没有意义，某些模型在真正新颖的问题上得分下降 20-30%。缓解策略包括：(1) **动态基准**（如 LiveCodeBench、SWE-MERA 持续更新题目）；(2) **领域专属评估**（用自己的数据构建 eval）；(3) **持续评估**（将评估嵌入生产流量）；(4) **多维度评估**（结合安全性、延迟、成本等非准确率指标）。最终原则：**任何单一数字都不能代表模型在你的场景中的表现——必须用你自己的数据测试**。
+静态 Benchmark 的核心陷阱是**高分 ≠ 高能力**——模型在固定测试集上的高准确率可能源于数据泄露（训练集包含测试题）、过拟合基准（针对基准优化而非真实能力提升）、以及**分布偏移**（基准的任务分布与生产环境不同）。2025 年业界观察到"**大脱钩**（The Great Decoupling）"现象：MMLU 80%+ 的分数对预测生产表现几乎没有意义，某些模型在真正新颖的问题上得分下降 20-30%。2026 年 **SWE-bench Verified 信任危机**提供了最直接的新证据：顶部分数飙升至 87-94%（Claude 系列领先），却被发现可被 harness 配置、retry 策略、reasoning effort 等"刷分"手段操纵——高分与真实生产可靠性严重脱节。缓解策略包括：(1) **动态基准**（如 LiveCodeBench、SWE-MERA 持续更新题目）；(2) **领域专属评估**（用自己的数据构建 eval）；(3) **持续评估**（将评估嵌入生产流量）；(4) **多维度评估**（结合安全性、延迟、成本等非准确率指标）。最终原则：**任何单一数字都不能代表模型在你的场景中的表现——必须用你自己的数据测试**。
 
 ## 详细解析
 
@@ -63,6 +63,34 @@ hle = {
 }
 ```
 
+### SWE-bench 信任危机：高分≠可信的最新实证（2026）
+
+```python
+# SWE-bench Verified：顶部分数 87-94%，但分数可被 "gaming"
+
+swebench_crisis = {
+    "现象": "SWE-bench Verified 排行榜顶部分数已达 87-94%（Claude 系列领先）",
+    "问题": "分数高低不再可靠反映真实 coding 能力，出现信任危机",
+    "可被操纵的维度（刷分手段）": {
+        "Harness 配置": "同一模型用不同测试容器/框架配置，分数差异显著",
+        "Retry 策略": "失败后自动重试、多次采样取最优解，人为拉高分数",
+        "Reasoning effort": "开启更长推理链/更多 token 预算，分数随之上升",
+        "Test patch 选择性": "选择性运行测试子集，规避可能失败的用例",
+    },
+    "根因": "基准从'测真实能力'退化为'测刷分能力'——比的是谁更会针对基准优化",
+    "为什么'高分≠生产可信'": [
+        "SWE-bench 只测单点 bug 修复，不覆盖真实软件的长周期演化任务",
+        "高分 Agent 在多文件协作、跨模块重构等真实场景中表现远不如分数暗示",
+        "harness/retry 的优化在生产环境中无法等价复制（生产没有无限重试预算）",
+    ],
+    "本质": "这是过拟合基准（Benchmark Overfitting）+ 分布偏移的叠加失效——"
+           "不是模型变强了，而是评测流程被针对性调优",
+    "应对": "新基准 SWE-EVO（arXiv 2512.18470）转向长周期软件演化，弥补单点 bug 修复局限",
+}
+```
+
+> **面试一句话总结**：SWE-bench 顶部 87-94% 不是"模型已经接近完美"，而是"评测流程已经被充分优化"。任何在生产中无法复现的重试预算、容器配置、推理预算，都是 benchmark 分数的"水分"来源。
+
 ### LLM-as-Judge 的稳定性陷阱
 
 ```python
@@ -103,6 +131,11 @@ dynamic_benchmarks = {
         "方法": "从最新 GitHub Issue 自动收集测试用例",
         "优势": "永远不会被训练数据污染",
         "挑战": "自动收集的题目质量参差不齐",
+    },
+    "SWE-EVO": {
+        "方法": "评估 Coding Agent 在真实长周期软件演化任务上的表现（arXiv 2512.18470）",
+        "针对的问题": "SWE-bench 只测单点 bug 修复，SWE-EVO 测跨版本的持续演化",
+        "意义": "直接回应 SWE-bench 信任危机——把评测从'刷单点分数'拉回'真实工程能力'",
     },
     "Chatbot Arena": {
         "方法": "用户实时投票对比两个模型的回答",
@@ -186,6 +219,7 @@ class ProductionEvalStrategy:
 │ 相信单一排行榜         │ 多基准交叉验证 + 自有评估    │
 │ LLM Judge 自动化偏差   │ 人工校准 + 多 Judge 投票     │
 │ 基准饱和失去区分力     │ 设计更难的任务或细分维度     │
+│ Benchmark 被 gaming    │ 固化 harness/retry 配置 + 用 SWE-EVO 等演化型基准 │
 └────────────────────────┴──────────────────────────────┘
 ```
 
@@ -195,9 +229,11 @@ class ProductionEvalStrategy:
 
 2. **误区："基准分数高就可以直接上线"** — 生产环境有基准测试没有的复杂性：网络超时、恶意输入、长尾分布、安全攻击。基准测试是必要但远不充分的——还需要在线评估、安全测试和灰度发布。
 
-3. **追问："如何构建不会被污染的评估？"** — (1) 使用内部业务数据构建私有测试集，不公开发布；(2) 定期从最新生产日志中补充新用例；(3) 使用动态基准（LiveCodeBench、SWE-MERA）作为补充；(4) 关注模型在训练截止日期之后的数据上的表现。
+3. **追问："SWE-bench 顶部都到 87-94% 了，为什么还不能信？"** — 这是 2026 年最典型的"高分≠可信"案例。顶部分数可被 harness 配置、retry 策略、reasoning effort 等"刷分"手段人为拉高——比的是谁更会针对基准优化，而非真实 coding 能力。更关键的是，SWE-bench 只测单点 bug 修复，不覆盖真实软件的长周期演化任务，高分 Agent 在多文件协作、跨模块重构中表现远不如分数暗示。应对：(1) 固化评测流程配置（统一 harness、禁止无限重试），挤出"水分"；(2) 用 SWE-EVO 等演化型基准补充；(3) 始终回到自己的领域数据验证。
 
-4. **追问："如何平衡评估的全面性和成本？"** — 分层策略：公开基准免费快速初筛 → 领域评估（200-500 用例，LLM Judge 自动化）→ 小流量在线测试（5% 流量 A/B）。大部分成本在领域评估层，但这是投资回报率最高的环节。
+4. **追问："如何构建不会被污染的评估？"** — (1) 使用内部业务数据构建私有测试集，不公开发布；(2) 定期从最新生产日志中补充新用例；(3) 使用动态基准（LiveCodeBench、SWE-MERA、SWE-EVO）作为补充；(4) 关注模型在训练截止日期之后的数据上的表现。
+
+5. **追问："如何平衡评估的全面性和成本？"** — 分层策略：公开基准免费快速初筛 → 领域评估（200-500 用例，LLM Judge 自动化）→ 小流量在线测试（5% 流量 A/B）。大部分成本在领域评估层，但这是投资回报率最高的环节。
 
 ## 参考资料
 
@@ -206,3 +242,7 @@ class ProductionEvalStrategy:
 - [The Stability Trap: Evaluating the Reliability of LLM-Based Instruction Adherence Auditing (arXiv)](https://arxiv.org/html/2601.11783)
 - [Beyond Synthetic Benchmarks: Evaluating LLM Performance on Real-World Code (arXiv)](https://arxiv.org/html/2510.26130v1)
 - [LLM Evaluation Benchmarks and Safety Datasets for 2025 (Responsible AI Labs)](https://responsibleailabs.ai/knowledge-hub/articles/llm-evaluation-benchmarks-2025)
+- [SWE-bench 官方排行榜](https://www.swebench.com/)
+- [Trustworthy Benchmarks: SWE-bench 信任危机分析（2026）](https://moogician.github.io/blog/2026/trustworthy-benchmarks-cont/)
+- [Agent Benchmarks 2026 对比](https://www.birjob.com/blog/agent-benchmarks-2026)
+- [SWE-EVO：长周期软件演化基准（arXiv 2512.18470）](https://arxiv.org/html/2512.18470v6)

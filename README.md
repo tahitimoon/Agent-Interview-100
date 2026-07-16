@@ -20,15 +20,15 @@
 - 🎯 **三级难度分布** — 基础 (30%) · 中级 (50%) · 高级 (20%)，适配不同阶段的学习者
 - 📝 **统一四段式结构** — 每篇文章均包含：简短回答 → 详细解析 → 常见误区/面试追问 → 参考资料
 - 💻 **丰富的代码示例** — Python 实现、伪代码、架构图，理论与实践结合
-- 🔬 **前沿研究引用** — 引用最新论文与行业实践，紧跟技术前沿（含 Proactive Agent、RAG 评估指标等 2025 最新内容）
+- 🔬 **前沿研究引用** — 引用最新论文与行业实践，紧跟技术前沿（含 Computer Use、Deep Research、12-Factor Agents、Agent 合规等 2026 最新内容）
 
 ---
 
 ## 📖 目录结构
 
-> 📌 **关于题号**：本项目历经多次合并精简与差异化扩展，部分编号（如 `#004`、`#105` 等共 12 个）已废弃不再使用。保留原号以维持外部链接、文章交叉引用与 Git 历史的稳定。**当前实际题数 100，编号最大至 #112。**
+> 📌 **关于题号**：本项目历经多次合并精简与差异化扩展，部分编号（如 `#004`、`#045`、`#058`、`#105` 等共 16 个）已废弃不再使用。保留原号以维持外部链接、文章交叉引用与 Git 历史的稳定。**当前实际题数 100，编号最大至 #116。**
 
-### 一、🏛️ Agent 架构 (`01-agent-architecture/`) — 10 题
+### 一、🏛️ Agent 架构 (`01-agent-architecture/`) — 12 题
 
 Agent 系统的核心设计理念，从基本概念到生产级架构设计。
 
@@ -44,6 +44,8 @@ Agent 系统的核心设计理念，从基本概念到生产级架构设计。
 | 010 | [生产级 Agent 系统设计（含智能客服实战案例）](01-agent-architecture/010-production-agent-system-design.md) |
 | 108 | [面试追问链：从「什么是 Agent」到系统设计的 10 层递进追问](01-agent-architecture/108-interview-deep-dive-chain.md) |
 | 109 | [🆕 什么是 Agent Harness？与 Framework / Runtime 三层抽象有何区别？](01-agent-architecture/109-what-is-agent-harness.md) |
+| 113 | [🆕 什么是 Computer Use / Browser Use Agent？它与 API Agent 有何区别？](01-agent-architecture/113-computer-use-agent.md) |
+| 114 | [🆕 什么是 Deep Research / Agentic Search Agent？它和 Agentic RAG 有何区别？](01-agent-architecture/114-deep-research-agent.md) |
 
 ### 二、🔍 RAG (`02-rag/`) — 9 题
 
@@ -95,7 +97,7 @@ LLM 与外部工具的交互，从 Function Calling 到安全管控。
 | 039 | [如何调试和监控多 Agent 系统？](04-multi-agent/039-debugging-monitoring-multi-agent.md) |
 | 101 | [🆕 A2A（Agent-to-Agent）协议是什么？它与 MCP 有何区别？](04-multi-agent/101-a2a-protocol.md) |
 
-### 五、🧠 记忆与状态 (`05-memory-and-state/`) — 7 题
+### 五、🧠 记忆与状态 (`05-memory-and-state/`) — 6 题
 
 Agent 的记忆管理，从上下文窗口到知识图谱。
 
@@ -105,11 +107,10 @@ Agent 的记忆管理，从上下文窗口到知识图谱。
 | 041 | [对话上下文窗口管理与压缩策略](05-memory-and-state/041-context-window-management.md) |
 | 043 | [如何实现 Agent 的持久化记忆（Persistent Memory）？](05-memory-and-state/043-persistent-memory.md) |
 | 044 | [状态管理在 Agent 系统中的设计模式](05-memory-and-state/044-state-management-patterns.md) |
-| 045 | [如何实现跨会话的用户偏好学习？](05-memory-and-state/045-cross-session-preferences.md) |
 | 046 | [长期记忆存储介质选型（向量/结构化/图谱）](05-memory-and-state/046-long-term-memory-storage.md) |
 | 048 | [记忆的遗忘与更新机制：如何处理过时信息？](05-memory-and-state/048-memory-forgetting-updating.md) |
 
-### 六、🧩 规划与推理 (`06-planning-and-reasoning/`) — 9 题
+### 六、🧩 规划与推理 (`06-planning-and-reasoning/`) — 7 题
 
 LLM 的推理能力增强与任务规划策略。
 
@@ -119,10 +120,8 @@ LLM 的推理能力增强与任务规划策略。
 | 050 | [任务分解（Task Decomposition）的基本方法](06-planning-and-reasoning/050-task-decomposition.md) |
 | 052 | [Plan-and-Solve 与动态重规划](06-planning-and-reasoning/052-plan-and-solve-replanning.md) |
 | 053 | [LLM 作为规划器的局限性与缓解方案](06-planning-and-reasoning/053-llm-planning-limitations.md) |
-| 055 | [Reasoning 模型（o1/o3/DeepSeek-R1）vs 标准模型：架构差异与适用场景](06-planning-and-reasoning/055-reasoning-models.md) |
+| 055 | [🆕 2026 推理/Agent 模型版图：Claude / GPT / Gemini 三家旗舰对比与选型](06-planning-and-reasoning/055-reasoning-models.md) |
 | 056 | [Monte Carlo Tree Search 在 Agent 规划中的应用](06-planning-and-reasoning/056-mcts-in-agent-planning.md) |
-| 057 | [如何评估 Agent 的推理质量？](06-planning-and-reasoning/057-reasoning-quality-evaluation.md) |
-| 058 | [因果推理在 Agent 决策中的作用](06-planning-and-reasoning/058-causal-reasoning.md) |
 | 103 | [Agentic-RL 是什么？如何用 GRPO 训练 Agent 的决策能力？](06-planning-and-reasoning/103-agentic-rl-grpo.md) |
 
 ### 七、✍️ 提示工程 (`07-prompt-engineering/`) — 10 题
@@ -169,11 +168,11 @@ Agent 系统的安全风险防控与对齐策略。
 | 080 | [Human-in-the-Loop：何时以及如何引入人工审核？](09-safety-and-alignment/080-human-in-the-loop.md) |
 | 081 | [Agent 的权限最小化原则与沙箱执行](09-safety-and-alignment/081-least-privilege-sandboxing.md) |
 | 082 | [如何检测和缓解 Agent 的幻觉（Hallucination）？](09-safety-and-alignment/082-hallucination-detection.md) |
-| 083 | [内容过滤与毒性检测在 Agent 系统中的实现](09-safety-and-alignment/083-content-filtering-toxicity.md) |
 | 084 | [Agent 对齐问题：如何确保 Agent 行为符合人类意图？](09-safety-and-alignment/084-agent-alignment.md) |
 | 085 | [Red Teaming：如何对 Agent 系统进行对抗测试？](09-safety-and-alignment/085-red-teaming-agents.md) |
+| 115 | [🆕 Agent 产品如何做合规设计？EU AI Act 对 Agent 有何影响？](09-safety-and-alignment/115-agent-compliance-eu-ai-act.md) |
 
-### 十、🚀 生产部署 (`10-production-and-deployment/`) — 12 题
+### 十、🚀 生产部署 (`10-production-and-deployment/`) — 13 题
 
 从开发到生产的全链路工程实践。
 
@@ -191,6 +190,7 @@ Agent 系统的安全风险防控与对齐策略。
 | 104 | [🆕 场景题：你的 Agent 在生产环境出了故障，如何系统性排查和修复？](10-production-and-deployment/104-agent-production-troubleshooting.md) |
 | 107 | [🆕 代码 Review 题：找出这段 Agent 代码中的设计问题并修复](10-production-and-deployment/107-agent-code-review.md) |
 | 112 | [🆕 Agent Sandbox / Runtime 选型：E2B / Daytona / Modal / Cloudflare Sandbox 隔离强度 + cold start + egress](10-production-and-deployment/112-agent-sandbox-runtime.md) |
+| 116 | [🆕 什么是 12-Factor Agents？如何用它评审生产级 Agent？](10-production-and-deployment/116-12-factor-agents.md) |
 
 ### 十一、🧰 框架选型 (`11-frameworks/`) — 6 题
 
@@ -201,7 +201,7 @@ Agent 系统的安全风险防控与对齐策略。
 | 096 | [主流 Agent 框架概览：LangChain、LlamaIndex、Haystack](11-frameworks/096-framework-overview.md) |
 | 097 | [LangGraph 的核心概念：节点、边、状态](11-frameworks/097-langgraph-concepts.md) |
 | 098 | [框架 vs 自研：什么时候应该自己构建 Agent 框架？](11-frameworks/098-framework-vs-custom.md) |
-| 099 | [OpenAI Assistants API vs Anthropic Claude Agent SDK 对比](11-frameworks/099-assistants-api-vs-claude-sdk.md) |
+| 099 | [OpenAI Responses API / Agents SDK vs Anthropic Claude Agent SDK 对比](11-frameworks/099-assistants-api-vs-claude-sdk.md) |
 | 100 | [如何设计可测试、可扩展的 Agent 框架抽象层？](11-frameworks/100-testable-extensible-framework.md) |
 | 110 | [🆕 主流 Coding Agent Harness 横评：Claude Code / Cursor / Aider / Cline / Codex CLI 在 Context / Tool / Permission / Sandbox 四维对比](11-frameworks/110-coding-agent-harness-comparison.md) |
 
@@ -227,23 +227,23 @@ Agent 系统的安全风险防控与对齐策略。
 
 | 模块 | 题数 | 简介 |
 |------|------|------|
-| 🏛️ Agent 架构 | 10 | Agent 定义、架构模式、循环设计与错误恢复、生产级系统设计（含实战案例）、面试追问链、Harness 三层抽象 |
+| 🏛️ Agent 架构 | 12 | Agent 定义、架构模式、循环设计与错误恢复、生产级系统设计（含实战案例）、面试追问链、Harness 三层抽象、**Computer Use / Deep Research（2026）** |
 | 🔍 RAG | 9 | 检索增强生成全流程：文档分块、向量数据库、混合检索、Re-ranking、Agentic RAG、**评估指标与量化计算** |
 | 🔧 工具使用 | 10 | Function Calling、Tool Schema、MCP 协议、工具安全与动态发现 |
 | 🤝 多 Agent | 10 | 多 Agent 通信与编排模式、任务协调、Handoff、涌现行为、A2A 协议 |
-| 🧠 记忆与状态 | 7 | 短期/长期/工作记忆、上下文窗口管理与压缩、持久化记忆、长期记忆存储介质选型 |
-| 🧩 规划与推理 | 9 | CoT/ToT 推理、任务分解、Plan-and-Solve 与动态重规划、MCTS、因果推理、Agentic-RL |
+| 🧠 记忆与状态 | 6 | 短期/长期/工作记忆、上下文窗口管理与压缩、持久化记忆、长期记忆存储介质选型、Agent Memory 框架横评 |
+| 🧩 规划与推理 | 7 | CoT/ToT 推理、任务分解、Plan-and-Solve 与动态重规划、MCTS、**2026 推理/Agent 模型版图**、Agentic-RL |
 | ✍️ 提示工程 | 10 | System Prompt 设计、结构化输出、Prompt Injection 防御、自动化 Prompt 优化、Context Engineering |
 | 📊 评估 | 9 | 评估方法论（LLM→Agent）、LLM-as-Judge、Benchmark 设计、可观测性、Eval Harness 设计 |
-| 🛡️ 安全与对齐 | 8 | 安全风险、Guardrails、权限最小化、幻觉检测、Red Teaming |
-| 🚀 生产部署 | 12 | LLMOps、成本优化、模型路由、延迟优化、场景故障排查、代码 Review、Sandbox / Runtime 选型 |
+| 🛡️ 安全与对齐 | 8 | 安全风险、Guardrails、权限最小化、幻觉检测、Red Teaming、**Agent 合规（EU AI Act）** |
+| 🚀 生产部署 | 13 | LLMOps、成本优化、模型路由、延迟优化、场景故障排查、代码 Review、Sandbox / Runtime 选型、**12-Factor Agents** |
 | 🧰 框架选型 | 6 | LangChain/LlamaIndex/LangGraph 对比、框架 vs 自研、Coding Agent Harness 横评 |
 
 ---
 
 ## 🆕 特色题型
 
-本项目在传统问答题的基础上，引入了 **6 种实践导向题型**，帮助你从不同角度深入理解 Agent 技术：
+本项目在传统问答题的基础上，引入了 **7 种实践导向题型**，帮助你从不同角度深入理解 Agent 技术：
 
 | 题型 | 代表题目 | 学习价值 |
 |------|---------|---------|
@@ -253,6 +253,7 @@ Agent 系统的安全风险防控与对齐策略。
 | 🔍 **代码 Review** | [#107](10-production-and-deployment/107-agent-code-review.md) | 审查真实 Agent 代码中的问题，培养代码质量意识和最佳实践 |
 | 🔗 **递进追问链** | [#108](01-agent-architecture/108-interview-deep-dive-chain.md) | 10 层递进追问，从基础概念一步步深入到系统设计，串联知识体系 |
 | 🛠️ **Harness 主题** | [#109](01-agent-architecture/109-what-is-agent-harness.md)、[#110](11-frameworks/110-coding-agent-harness-comparison.md)、[#111](08-evaluation/111-eval-harness-design.md)、[#112](10-production-and-deployment/112-agent-sandbox-runtime.md) | 2025-2026 Coding Agent 工程实践焦点：三层抽象（Harness/Framework/Runtime）+ Coding Harness 横评 + Eval Harness 设计 + Sandbox/Runtime 选型 |
+| 🌐 **前沿形态（2026）** | [#113](01-agent-architecture/113-computer-use-agent.md)、[#114](01-agent-architecture/114-deep-research-agent.md)、[#115](09-safety-and-alignment/115-agent-compliance-eu-ai-act.md)、[#116](10-production-and-deployment/116-12-factor-agents.md) | 2026 前沿热点：Computer Use / Browser Use Agent、Deep Research、Agent 合规（EU AI Act）、12-Factor Agents |
 
 ---
 
@@ -322,7 +323,7 @@ Week 4: 前沿技术
 
 ```
 Week 1-2: 安全基础
-078 → 079 → 080 → 081 → 082 → 083 → 084 → 085
+078 → 079 → 080 → 081 → 082 → 084 → 085 → 115（Agent 合规）
 
 Week 3: 安全实践
 030 → 064 → 024 → 104（场景题 - 含危险操作场景）
@@ -369,7 +370,7 @@ Week 4: 评估与监控
 **其他特色：**
 - 🔗 文章间交叉引用，形成知识网络，一个问题自然引出下一个
 - 📊 难度标注（基础/中级/高级），便于制定个人学习计划
-- 🆕 引用最新研究成果与行业实践（2024-2025）
+- 🆕 引用最新研究成果与行业实践（2024-2026）
 
 ---
 
