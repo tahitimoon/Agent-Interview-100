@@ -2,9 +2,9 @@
 
 > 每篇文章一行，一句话概括即该篇「简短回答」段的核心结论——扫一眼这份索引，就能了解全库 100 题各自讲了什么、当前的知识状态是什么。
 >
-> **更新日期**：2026-08-12 ｜ **收录**：100 篇 / 11 个模块
+> **更新日期**：2026-08-12 ｜ **收录**：104 篇 / 11 个模块
 
-## 01-agent-architecture（Agent 架构，9 篇）
+## 01-agent-architecture（Agent 架构，12 篇）
 
 - [001-what-is-llm-agent](../01-agent-architecture/001-what-is-llm-agent.md) — Agent 是有状态、目标驱动、能与外界交互的自主系统
 - [002-agent-core-components](../01-agent-architecture/002-agent-core-components.md) — 感知、推理、行动、记忆四模块构成认知闭环
@@ -15,11 +15,13 @@
 - [009-self-reflection-correction](../01-agent-architecture/009-self-reflection-correction.md) — Reflexion 把环境反馈化为语言化反思存入记忆
 - [010-production-agent-system-design](../01-agent-architecture/010-production-agent-system-design.md) — 生产系统须解决五大挑战，架构要 right-size
 - [108-interview-deep-dive-chain](../01-agent-architecture/108-interview-deep-dive-chain.md) — 追问链逐层深入，找候选人能力天花板
+- [109-what-is-agent-harness](../01-agent-architecture/109-what-is-agent-harness.md) — Harness 是模型之外的一切，决定约七成实战表现
+- [113-computer-use-agent](../01-agent-architecture/113-computer-use-agent.md) — 看屏操作 GUI 自动化任意软件，无契约、成本可靠性高
+- [114-deep-research-agent](../01-agent-architecture/114-deep-research-agent.md) — 计划-检索-判充分-合成循环，产出带引用长报告
 
-## 02-rag（RAG，10 篇）
+## 02-rag（RAG，9 篇）
 
-- [011-what-is-rag](../02-rag/011-what-is-rag.md) — 检索注入外部知识，解决知识截止、幻觉、领域缺失
-- [012-rag-pipeline-components](../02-rag/012-rag-pipeline-components.md) — 索引、检索、生成三条流水线各有独立优化空间
+- [011-rag-overview-and-pipeline](../02-rag/011-rag-overview-and-pipeline.md) — 检索注入外部知识解三大局限，三条流水线三段演进
 - [013-chunking-strategies](../02-rag/013-chunking-strategies.md) — 递归分块是通用默认，核心权衡上下文与精度
 - [014-vector-database-comparison](../02-rag/014-vector-database-comparison.md) — 选型看 Recall、尾延迟、过滤与运维，非 Benchmark
 - [015-embedding-model-selection](../02-rag/015-embedding-model-selection.md) — Voyage 领先，OpenAI 3-large 是均衡生产默认
@@ -49,21 +51,20 @@
 - [033-orchestration-patterns](../04-multi-agent/033-orchestration-patterns.md) — Pipeline/Hub-Spoke/层级三种编排，按依赖与并行度选
 - [034-task-allocation-coordination](../04-multi-agent/034-task-allocation-coordination.md) — 任务拆分分配协调，明确角色边界与通信模式
 - [035-conflict-resolution](../04-multi-agent/035-conflict-resolution.md) — 投票、共识、仲裁解冲突，警惕 Agent 趋同效应
-- [036-multi-agent-frameworks](../04-multi-agent/036-multi-agent-frameworks.md) — CrewAI 快、LangGraph 控制精、AutoGen 对话灵活
+- [036-multi-agent-frameworks](../04-multi-agent/036-multi-agent-frameworks.md) — CrewAI 角色、LangGraph 图控制，MAF 已取代 AutoGen
 - [037-agent-handoff](../04-multi-agent/037-agent-handoff.md) — transfer_to 工具化交接，难点在上下文可靠传递
 - [038-emergent-behavior](../04-multi-agent/038-emergent-behavior.md) — 涌现既是优势也是风险，需拓扑与监控做可控设计
 - [039-debugging-monitoring-multi-agent](../04-multi-agent/039-debugging-monitoring-multi-agent.md) — 分布式追踪是核心方法，行业收敛到 OTel 标准
-- [101-a2a-protocol](../04-multi-agent/101-a2a-protocol.md) — A2A 管 Agent 间横向协作，与 MCP 纵向扩展互补
+- [101-a2a-protocol](../04-multi-agent/101-a2a-protocol.md) — A2A 管 Agent 横向协作，与 MCP 互补成双层标准
 
-## 05-memory-and-state（记忆与状态，8 篇）
+## 05-memory-and-state（记忆与状态，7 篇）
 
 - [040-memory-types](../05-memory-and-state/040-memory-types.md) — 短期/长期/工作记忆三类，LLM 无状态全靠外部工程
 - [041-context-window-management](../05-memory-and-state/041-context-window-management.md) — 截断到分层摘要多种策略，简单策略常不逊于复杂
 - [043-persistent-memory](../05-memory-and-state/043-persistent-memory.md) — 双层存储跨会话保留，关键挑战是选择性存储与遗忘
 - [044-state-management-patterns](../05-memory-and-state/044-state-management-patterns.md) — LangGraph State+Reducer+Checkpoint 已成业界主流
-- [045-cross-session-preferences](../05-memory-and-state/045-cross-session-preferences.md) — 持久记忆+偏好提取+动态适配让 Agent 了解用户
-- [046-vector-vs-structured-memory](../05-memory-and-state/046-vector-vs-structured-memory.md) — 向量擅语义检索，结构化擅关系推理，推荐混合
-- [047-knowledge-graph-memory](../05-memory-and-state/047-knowledge-graph-memory.md) — KG 记忆支持多跳与时间推理，Graphiti 双时间线
+- [045-cross-session-preferences](../05-memory-and-state/045-cross-session-preferences.md) — 已废弃，独特内容迁入 #043 用户偏好学习小节
+- [046-long-term-memory-storage](../05-memory-and-state/046-long-term-memory-storage.md) — 向量语义、结构化精确、图谱关系推理，生产混合
 - [048-memory-forgetting-updating](../05-memory-and-state/048-memory-forgetting-updating.md) — 时间衰减、频率淘汰、冲突更新，效用删除更优
 
 ## 06-planning-and-reasoning（规划与推理，9 篇）
@@ -72,13 +73,13 @@
 - [050-task-decomposition](../06-planning-and-reasoning/050-task-decomposition.md) — LLM/程序化/HTN/ADaPT 分解，核心权衡拆分粒度
 - [052-plan-and-solve-replanning](../06-planning-and-reasoning/052-plan-and-solve-replanning.md) — 先规划后执行，配合动态重规划形成完整闭环
 - [053-llm-planning-limitations](../06-planning-and-reasoning/053-llm-planning-limitations.md) — LLM 不能真正规划，LLM-Modulo 外部验证器补救
-- [055-reasoning-models](../06-planning-and-reasoning/055-reasoning-models.md) — 测试时计算扩展先想后答，强于推理但高延迟成本
+- [055-reasoning-models](../06-planning-and-reasoning/055-reasoning-models.md) — 推理与通用模型合流，thinking 成旗舰内置可调模式
 - [056-mcts-in-agent-planning](../06-planning-and-reasoning/056-mcts-in-agent-planning.md) — MCTS 四步循环补 LLM 无法回溯之短，LATS 为代表
-- [057-reasoning-quality-evaluation](../06-planning-and-reasoning/057-reasoning-quality-evaluation.md) — 超越答案对错评推理过程，过程评估更可靠
-- [058-causal-reasoning](../06-planning-and-reasoning/058-causal-reasoning.md) — 因果阶梯三层，LLM 擅关联弱反事实，需外部因果模型
+- [057-reasoning-quality-evaluation](../06-planning-and-reasoning/057-reasoning-quality-evaluation.md) — 已废弃，独特内容迁入 #069 推理过程评估小节
+- [058-causal-reasoning](../06-planning-and-reasoning/058-causal-reasoning.md) — 已废弃，主线相关度低、无生产落地，主题移除
 - [103-agentic-rl-grpo](../06-planning-and-reasoning/103-agentic-rl-grpo.md) — 任务完成度做奖励训 Agent，GRPO 免 Critic 降成本
 
-## 07-prompt-engineering（Prompt 工程，11 篇）
+## 07-prompt-engineering（Prompt 工程，10 篇）
 
 - [059-system-prompt-principles](../07-prompt-engineering/059-system-prompt-principles.md) — System Prompt 是宪法：角色、约束、示例、分层结构
 - [060-few-shot-vs-zero-shot](../07-prompt-engineering/060-few-shot-vs-zero-shot.md) — 简单任务 Zero-shot，特定格式 Few-shot，边界在扩大
@@ -86,15 +87,14 @@
 - [062-agentic-prompting](../07-prompt-engineering/062-agentic-prompting.md) — 优化多步决策链而非单次输出，含工具描述与护栏
 - [063-prompt-chaining](../07-prompt-engineering/063-prompt-chaining.md) — 任务拆为顺序 LLM 调用链，可控可靠可观测
 - [064-prompt-injection-defense](../07-prompt-engineering/064-prompt-injection-defense.md) — 头号安全威胁，无银弹，必须多层纵深防御
-- [065-dspy-programmatic-prompting](../07-prompt-engineering/065-dspy-programmatic-prompting.md) — 编程而非提示，框架自动优化 Prompt 与示例
+- [065-programmatic-prompt-optimization](../07-prompt-engineering/065-programmatic-prompt-optimization.md) — DSPy 优化结构化组件，元提示流派直接优化字符串
 - [066-prompt-versioning-ab-testing](../07-prompt-engineering/066-prompt-versioning-ab-testing.md) — Prompt 即代码：版本控制、A/B 测试、渐进发布
-- [067-meta-prompting](../07-prompt-engineering/067-meta-prompting.md) — 用 LLM 优化 Prompt，APE/OPRO 等可超人类手写
 - [068-cross-model-prompt-portability](../07-prompt-engineering/068-cross-model-prompt-portability.md) — Prompt 高度模型特异，核心层+模型适配层解决
 - [102-context-engineering](../07-prompt-engineering/102-context-engineering.md) — 从写好 Prompt 转向上下文的选择、组装与管理
 
-## 08-evaluation（评估，8 篇）
+## 08-evaluation（评估，9 篇）
 
-- [069-evaluation-methodology](../08-evaluation/069-evaluation-methodology.md) — 自动指标、人工、LLM-as-Judge 三类混合使用
+- [069-evaluation-methodology](../08-evaluation/069-evaluation-methodology.md) — 自动指标、人工、Judge 混用；Agent 评估看多步轨迹
 - [071-llm-as-judge](../08-evaluation/071-llm-as-judge.md) — 与人工一致性 80%+，需缓解位置、冗长等偏差
 - [072-agent-benchmarks](../08-evaluation/072-agent-benchmarks.md) — SWE-bench/WebArena/GAIA 评完整任务执行过程
 - [073-regression-testing](../08-evaluation/073-regression-testing.md) — Golden Dataset+Judge 评分+CI 集成防性能退化
@@ -102,22 +102,23 @@
 - [075-evaluation-tools-comparison](../08-evaluation/075-evaluation-tools-comparison.md) — Ragas 专 RAG，LangSmith 全栈，Langfuse 开源首选
 - [076-static-benchmark-trap](../08-evaluation/076-static-benchmark-trap.md) — 高分不等于高能力，必须用自己的数据测试
 - [077-continuous-evaluation-pipeline](../08-evaluation/077-continuous-evaluation-pipeline.md) — 评估贯穿开发、上线、运行期的持续闭环
+- [111-eval-harness-design](../08-evaluation/111-eval-harness-design.md) — Harness 是考场非题库，先固定 harness 再换模型测
 
-## 09-safety-and-alignment（安全与对齐，8 篇）
+## 09-safety-and-alignment（安全与对齐，9 篇）
 
 - [078-agent-safety-risks](../09-safety-and-alignment/078-agent-safety-risks.md) — 四类风险，Prompt Injection 居首，警惕致命三角
 - [079-guardrails-basics](../09-safety-and-alignment/079-guardrails-basics.md) — 输入输出双侧护栏，规则型与模型型组合多层防御
 - [080-human-in-the-loop](../09-safety-and-alignment/080-human-in-the-loop.md) — 审批、置信度路由等模式，平衡自动化与人类监督
 - [081-least-privilege-sandboxing](../09-safety-and-alignment/081-least-privilege-sandboxing.md) — 最小权限+沙箱隔离，Agent 需动态运行时权限
 - [082-hallucination-detection](../09-safety-and-alignment/082-hallucination-detection.md) — 不确定性估计、知识验证、一致性检查三类检测
-- [083-content-filtering-toxicity](../09-safety-and-alignment/083-content-filtering-toxicity.md) — 规则、分类器、LLM 多层级联做实时内容拦截
+- [083-content-filtering-toxicity](../09-safety-and-alignment/083-content-filtering-toxicity.md) — 已废弃，独特内容迁入 #079 毒性检测小节
 - [084-agent-alignment](../09-safety-and-alignment/084-agent-alignment.md) — 对齐失败是做错事，防规格游戏与欺骗性规划
 - [085-red-teaming-agents](../09-safety-and-alignment/085-red-teaming-agents.md) — 攻击者视角主动测漏洞，已从可选变为合规必需
+- [115-agent-compliance-eu-ai-act](../09-safety-and-alignment/115-agent-compliance-eu-ai-act.md) — 风险分级、高风险义务 2026.8 生效，合规做成架构层
 
-## 10-production-and-deployment（生产与部署，12 篇）
+## 10-production-and-deployment（生产与部署，13 篇）
 
-- [086-llmops-basics](../10-production-and-deployment/086-llmops-basics.md) — LLMOps 以使用模型为核心，成本重心在运行时推理
-- [087-deployment-architecture](../10-production-and-deployment/087-deployment-architecture.md) — 接入、编排、模型网关、数据工具、观测五层架构
+- [086-llmops-and-deployment](../10-production-and-deployment/086-llmops-and-deployment.md) — LLMOps 以使用模型为核心，五层生产部署架构
 - [088-cost-optimization](../10-production-and-deployment/088-cost-optimization.md) — 缓存、路由、批处理等六策略组合可省 80-90%
 - [089-model-routing](../10-production-and-deployment/089-model-routing.md) — 按请求复杂度动态选模型，RouteLLM 省 85% 成本
 - [090-latency-optimization](../10-production-and-deployment/090-latency-optimization.md) — 流式、多层缓存、批处理三大手段降感知延迟
@@ -128,11 +129,14 @@
 - [095-disaster-recovery-ha](../10-production-and-deployment/095-disaster-recovery-ha.md) — 多提供商冗余、检查点恢复、优雅降级保高可用
 - [104-agent-production-troubleshooting](../10-production-and-deployment/104-agent-production-troubleshooting.md) — Trace 驱动排查配 OODA 循环，用数据不猜测
 - [107-agent-code-review](../10-production-and-deployment/107-agent-code-review.md) — 循环保护、超时、错误处理等六维度检查清单
+- [112-agent-sandbox-runtime](../10-production-and-deployment/112-agent-sandbox-runtime.md) — 隔离强度三档，Egress 须 default-deny 三层防御
+- [116-12-factor-agents](../10-production-and-deployment/116-12-factor-agents.md) — Agent 是 LLM 决策+确定性代码循环，12 原则收归己有
 
-## 11-frameworks（框架，5 篇）
+## 11-frameworks（框架，6 篇）
 
 - [096-framework-overview](../11-frameworks/096-framework-overview.md) — LangChain 全能、LlamaIndex 专数据、Haystack 重生产
-- [097-langgraph-concepts](../11-frameworks/097-langgraph-concepts.md) — State/Node/Edge 建模有状态工作流，含检查点
+- [097-langgraph-concepts](../11-frameworks/097-langgraph-concepts.md) — State/Node/Edge 建模有状态工作流，1.0 GA 可恢复
 - [098-framework-vs-custom](../11-frameworks/098-framework-vs-custom.md) — 框架价值=省的时间减绕限制的时间，渐进式演进
-- [099-assistants-api-vs-claude-sdk](../11-frameworks/099-assistants-api-vs-claude-sdk.md) — OpenAI 最小抽象云重，Claude SDK 绑 MCP 开放生态
+- [099-assistants-api-vs-claude-sdk](../11-frameworks/099-assistants-api-vs-claude-sdk.md) — OpenAI 走 SDK 轻云重，Claude SDK 绑 MCP 开放生态
 - [100-testable-extensible-framework](../11-frameworks/100-testable-extensible-framework.md) — 端口-适配器+依赖注入+中间件实现可测可扩展
+- [110-coding-agent-harness-comparison](../11-frameworks/110-coding-agent-harness-comparison.md) — 五大 harness 在 Context/工具/权限/沙箱四维各异
