@@ -12,7 +12,10 @@ auto-loop-state.md
 auto-loop-log.md
 
 # Docs
-docs/
+# docs/ 默认忽略，仅放行 index.md（见下方例外规则）
+!docs/
+docs/*
+!docs/index.md
 
 # Working reports (Phase 1/2/4 临时输出)
 .work/
