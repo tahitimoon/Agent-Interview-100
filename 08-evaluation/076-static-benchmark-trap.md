@@ -91,6 +91,25 @@ swebench_crisis = {
 
 > **面试一句话总结**：SWE-bench 顶部 87-94% 不是"模型已经接近完美"，而是"评测流程已经被充分优化"。任何在生产中无法复现的重试预算、容器配置、推理预算，都是 benchmark 分数的"水分"来源。
 
+### SWE-Bench ProMax：把能力探针换成跨文件重构（2026-08）
+
+```python
+# arXiv 2608.09802：对信任危机的正面回应——不修补旧题，直接换探针
+
+promax = {
+    "为什么要另起炉灶": [
+        "SWE-bench Verified 被审计出近 60% 未解实例存在测试缺陷（过窄或过宽）",
+        "前沿模型能逐字复现部分 gold patch——是记忆泄漏，不是推理",
+    ],
+    "换探针": "从'单点 bug 修复'换成'行为保持的跨文件重构'——更难做，也更难被背题",
+    "规模": "7 种语言、170 个专家精修的真实重构任务；平均每例改 11.4 个文件、261.6 行",
+    "数据治理": "issue 描述全部重写、测试逐条人工复核，剔除过窄/过宽用例",
+    "结果": "前沿模型最好解决率仅 41.2%（对比 Verified 顶部 87-94%）",
+    "启示": "同一批模型换一个更难泄漏的探针，分数从 90% 量级掉到 40% 量级——"
+           "说明 Verified 的高分主要衡量'见过多少'，而非'能改多少'",
+}
+```
+
 ### LLM-as-Judge 的稳定性陷阱
 
 ```python
@@ -246,3 +265,4 @@ class ProductionEvalStrategy:
 - [Trustworthy Benchmarks: SWE-bench 信任危机分析（2026）](https://moogician.github.io/blog/2026/trustworthy-benchmarks-cont/)
 - [Agent Benchmarks 2026 对比](https://www.birjob.com/blog/agent-benchmarks-2026)
 - [SWE-EVO：长周期软件演化基准（arXiv 2512.18470）](https://arxiv.org/html/2512.18470v6)
+- [SWE-Bench ProMax：多语言大规模重构基准（arXiv 2608.09802）](https://arxiv.org/abs/2608.09802)

@@ -148,6 +148,21 @@ class SecureMCPRegistry:
         self.tools[tool["name"]] = tool
 ```
 
+### 真实案例：权限规则注入（claude-agent-sdk-python v0.2.129）
+
+前四类威胁的攻击面都在 LLM 那一侧。但权限系统**自身的参数拼接**同样是攻击面——2026-08-04 的 claude-agent-sdk-python v0.2.129 就修了这样一个洞：`ClaudeAgentOptions.skills` 里的技能名未经校验就被拼进 CLI 参数 `--allowedTools`。
+
+```python
+# 攻击：技能名里塞进权限规则的分隔符
+options = ClaudeAgentOptions(skills=["harmless), Bash(rm -rf /"])
+# 拼接后 → --allowedTools "Skill(harmless), Bash(rm -rf /)"
+# 攻击者用一个「名字」换到了本不该有的工具权限
+```
+
+可利用的字符包括括号、逗号、控制字符、通配符、前导 `/` 与首尾空白。修复方式是在 connect 时严格校验技能名，非法即抛 `ValueError`；同时废弃 `skills=["*"]` / `skills=["plugin:*"]` 这类通配写法（breaking change），必须改用 `skills="all"` 或在 `allowed_tools` 里显式写 `Skill(...)` 规则——把「模糊匹配」换成「显式声明」，从根上消除歧义解析。
+
+启示有两条：一是权限规则如果用字符串拼接表达，就要按注入面来对待（等价于 SQL 拼接），要么转义要么改用结构化传参；二是通配符是权限系统里的坏味道，它把「授权范围」的决定权交给了字符串匹配。
+
 ### 纵深防御架构
 
 ```
@@ -240,6 +255,8 @@ security_checklist = {
 
 4. **追问："OWASP 对 Agent 安全有什么建议？"** — OWASP 发布了 AI Agent Security Cheat Sheet，核心建议包括：最小权限、输入/输出双向验证、工具调用审计、敏感操作人工审批、记忆污染防护。
 
+5. **追问："把 LLM 输出全部当不可信来处理，就安全了吗？"** — 不够。权限系统自身的实现也是攻击面：配置项拼进命令行、工具名拼进规则字符串、通配符展开成授权范围，都属于经典注入路径，与 LLM 是否被操纵无关。claude-agent-sdk-python v0.2.129 修的正是这类问题——技能名未校验就拼进 `--allowedTools`，攻击者用一个名字注入额外权限规则。审安全边界时，要连「谁来构造这条规则、规则是怎么被解析的」一起审。
+
 ## 参考资料
 
 - [OWASP AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
@@ -247,3 +264,4 @@ security_checklist = {
 - [From Prompt Injections to Protocol Exploits: Threats in LLM-Powered AI Agent Workflows (arXiv)](https://arxiv.org/html/2506.23260v1)
 - [Prompt Injection Attacks: Comprehensive Review (MDPI)](https://www.mdpi.com/2078-2489/17/1/54)
 - [MCP Security Vulnerabilities: Prompt Injection and Tool Poisoning (Practical DevSecOps)](https://www.practical-devsecops.com/mcp-security-vulnerabilities/)
+- [claude-agent-sdk-python v0.2.129 Release Notes（技能名注入 `--allowedTools` 的安全修复）](https://github.com/anthropics/claude-agent-sdk-python/releases/tag/v0.2.129)

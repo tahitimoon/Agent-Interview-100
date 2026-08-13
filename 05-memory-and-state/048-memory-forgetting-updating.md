@@ -93,6 +93,28 @@ class CapacityBoundedMemory:
         )
 ```
 
+#### 4. TTL 的实现陷阱：配了过期 ≠ 记忆真的消失
+
+工程上最常见的遗忘实现是给记忆行加 TTL，但 TTL 通常由后台清扫任务（sweeper）周期性删除，**两次清扫之间存在窗口期**：这段时间里已过期的记忆仍然躺在库里，检索照样能命中；更糟的是，很多实现带 `refresh_ttl`（访问即续期），一次检索命中就把本该死掉的行"复活"，过期记忆因此永远不过期。
+
+LangGraph 在 checkpoint v4.2.0（2026-08）给 `TTLConfig` 加了 `omit_expired`（默认 `False`）正是补这个洞：
+
+```python
+from langgraph.store.base import TTLConfig
+
+ttl_config = TTLConfig(
+    default_ttl=60,        # 分钟
+    refresh_on_read=True,
+    omit_expired=True,     # v4.2.0 新增，默认 False
+)
+# omit_expired=True 的两个效果：
+# 1. get / search / list_namespaces 在【查询层】过滤掉已过期行，
+#    不再依赖后台 TTL 清扫周期 —— 过期的当场就检索不到
+# 2. 阻止 refresh_ttl 给已过期的行续命（不会被读操作"复活"）
+```
+
+结论：遗忘要在**读路径**上生效，不能只挂在写路径和后台清扫上。设计时把"过期"当成检索时的过滤条件，而不是"迟早会被删掉"的状态。
+
 ### 更新策略
 
 #### 1. 冲突检测与覆盖
@@ -212,7 +234,9 @@ evaluation_dimensions = {
 
 3. **追问："如何防止幻觉信息被存入记忆？"** — A-MAC 的"事实置信度"维度正是解决这个问题——在存入记忆前评估信息可靠性。还可以：(1) 对 LLM 提取的事实做交叉验证；(2) 设置置信度阈值，低于阈值的信息不存储。
 
-4. **追问："记忆遗忘和 GDPR 的'被遗忘权'有什么关系？"** — GDPR 要求系统能完全删除用户数据。Agent 记忆系统必须支持彻底的物理删除（不仅是逻辑失效），包括向量存储、知识图谱和所有备份中的数据。
+4. **追问："给记忆加了 TTL，是不是就实现遗忘了？"** — 不够。TTL 一般靠后台清扫兑现，清扫周期之间过期记忆仍会被检索到；如果还开了"访问即续期"，一次命中就把它续活，等于永不过期。正确做法是让过期在读路径生效——查询时直接过滤过期行，并禁止续期作用于已过期数据。LangGraph checkpoint v4.2.0 的 `TTLConfig.omit_expired` 就是这个语义（默认关闭，需要显式开）。
+
+5. **追问："记忆遗忘和 GDPR 的'被遗忘权'有什么关系？"** — GDPR 要求系统能完全删除用户数据。Agent 记忆系统必须支持彻底的物理删除（不仅是逻辑失效），包括向量存储、知识图谱和所有备份中的数据。
 
 ## 参考资料
 
@@ -221,3 +245,4 @@ evaluation_dimensions = {
 - [The Problem with AI Agent "Memory" (Medium)](https://medium.com/@DanGiannone/the-problem-with-ai-agent-memory-9d47924e7975)
 - [MemoryBank: Enhancing Large Language Models with Long-Term Memory (arXiv)](https://arxiv.org/abs/2305.10250)
 - [Making Sense of Memory in AI Agents (Leonie Monigatti)](https://www.leoniemonigatti.com/blog/memory-in-ai-agents.html)
+- [LangGraph checkpoint v4.2.0 Release Notes: TTLConfig.omit_expired (GitHub)](https://github.com/langchain-ai/langgraph/releases/tag/checkpoint%3D%3D4.2.0)

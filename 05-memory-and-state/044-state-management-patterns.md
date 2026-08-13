@@ -201,6 +201,28 @@ def sensitive_action_node(state):
         return {"status": "rejected"}
 ```
 
+### 模式 6：外置状态 + 环境审计（LongHorizon-Harness，2026-08）
+
+前面五个模式回答的是"状态存在哪、怎么合并、怎么恢复"。LongHorizon-Harness 提出的是另一个维度：**谁有权写状态**。
+
+它把长程执行重构成一个任务状态管理问题，核心约束只有一条——**状态只接受环境已验证的事实**，模型的自我判断不算数：
+
+```
+Manager   维护任务状态；根据状态派发下一个子任务
+Executor  每个子任务用全新上下文执行，做完即弃，不携带历史
+Auditor   只读地去环境里核实结果，验证通过的事实才允许写回状态
+          ↑ 三者构成闭环，状态是唯一跨子任务的载体
+```
+
+对比常见做法：让单个 Agent 在不断膨胀的上下文里自我评估"我刚才做成了吗"，一次误判会留在上下文里，后续每一步都在这条错误结论上继续推理，误差持续传播。外置状态 + 独立审计切断这条链路——Executor 的上下文每次归零，错误无处驻留；状态里的每条事实都被环境验证过。
+
+效果（论文数据）：WeaveBench 51.8% → 80.7%，OSWorld 2.0 2.8% → 8.3%，增益可迁移到 Claude Opus 4.7。
+
+设计要点：
+- **状态是唯一的跨步骤载体**，子任务之间不共享上下文，只共享状态
+- **写状态需要凭据**：来源必须是环境的可观测结果（文件确实存在、测试确实通过），不是模型说"我做完了"
+- **审计只读**：Auditor 不修改环境，避免它自己成为新的错误来源
+
 ### 设计原则
 
 | 原则 | 说明 |
@@ -221,6 +243,7 @@ def sensitive_action_node(state):
 | 多 Agent 协作 | 共享状态 + Reducer |
 | 需要暂停/恢复 | Checkpointing |
 | 高风险操作 | Human-in-the-Loop + Checkpoint |
+| 超长程任务（几十步以上） | 外置状态 + 环境审计（Manager-Executor-Auditor） |
 
 ## 常见误区 / 面试追问
 
@@ -239,3 +262,4 @@ def sensitive_action_node(state):
 - [Production Multi-Agent System with LangGraph: Checkpointing & Error Recovery](https://markaicode.com/langgraph-production-agent/)
 - [Agentic Design Patterns: The 2026 Guide (SitePoint)](https://www.sitepoint.com/the-definitive-guide-to-agentic-design-patterns-in-2026/)
 - [Mastering LangGraph State Management in 2025 (SparkCo)](https://sparkco.ai/blog/mastering-langgraph-state-management-in-2025)
+- [LongHorizon-Harness: Advancing Long-Horizon Agents for Real-World Tasks (arXiv)](https://arxiv.org/abs/2608.01964)

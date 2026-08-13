@@ -212,6 +212,23 @@ response = client.messages.create(
 
 这是目前 LLM 厂商提供的最完整的"官方记忆原语"，与 Anthropic Skills、Structured Outputs 一起构成 2025-2026 Claude Platform 的三大新原语。
 
+### 前沿动向：记忆内化进模型（Metis，2026-07）
+
+上面所有方案有一个共同前提：LLM 无状态，记忆是模型外面搭的工程层。Metis 直接挑战这个前提，提出"记忆基础模型"（Memory Foundation Model）——把记忆做进底座，模型内部持有一份可持续演化的原生记忆状态：
+
+```
+外部工程路线（主流）              模型原生路线（Metis）
+------------------------------  ------------------------------
+记忆存在向量库/文件里            记忆是模型内部的一组状态
+靠 RAG / tool call 取回          靠 memory attention 直接访问历史压缩信息
+更新 = 写外部存储                更新 = 一次前向传播，无需梯度
+模型权重与记忆无关               推理时权重全冻结，记忆状态自主变换
+```
+
+关键点：**在线记忆维护不走梯度**。传统"让模型记住新东西"要么塞进上下文（受窗口限制），要么微调（要训练、要算力）；Metis 的记忆状态在一次 forward 里就完成更新，推理时权重不动，只有记忆状态在演化。
+
+对面试的意义：这条分叉决定了未来 Agent 记忆层的形态——是继续堆外部检索工程，还是由模型自己承担。短期内工程路线仍是唯一可落地选项，但"记忆全靠外部实现"这句话已经不再是无条件成立的公理，回答时最好加上时间限定。
+
 ### 三种记忆的关系
 
 | 维度 | 短期记忆 | 工作记忆 | 长期记忆 |
@@ -232,6 +249,8 @@ response = client.messages.create(
 
 4. **追问："MemGPT 的核心思想是什么？"** — 将上下文窗口视为有限的"内存"资源，实现类似操作系统虚拟内存的层级管理。Agent 可以在核心记忆（RAM/上下文窗口）和归档记忆（磁盘/外部存储）之间主动移动数据，创造"无限记忆"的体验。
 
+5. **追问："'LLM 无状态'这个前提会一直成立吗？"** — 不一定。它描述的是当前主流架构，不是理论必然。Metis 这类记忆基础模型把记忆状态放进模型内部，通过 memory attention 访问历史压缩信息，更新只需一次前向传播、不需要梯度，推理时权重冻结而记忆状态自主演化——这时"无状态"就不再成立了。面试时的稳妥答法：说清楚这是当前工程现实和它成立的原因（每次 API 调用独立、KV cache 不跨请求保留），再指出已有把记忆内化进底座的研究方向。
+
 ## 参考资料
 
 - [Agent Memory: What, Why and How (Mem0)](https://mem0.ai/blog/memory-in-agents-what-why-and-how/)
@@ -241,3 +260,4 @@ response = client.messages.create(
 - [Memory Overview (LangChain Docs)](https://docs.langchain.com/oss/python/concepts/memory)
 - [Anthropic Memory Tool (memory_20250818, Official Docs)](https://docs.anthropic.com/en/docs/build-with-claude/tool-use/memory-tool)
 - [Building agents with the Claude Developer Platform: Memory Tool (Anthropic Engineering)](https://www.anthropic.com/engineering/memory-and-context-management)
+- [Metis: Memory Foundation Model (arXiv)](https://arxiv.org/abs/2607.26760)

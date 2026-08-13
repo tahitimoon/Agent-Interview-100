@@ -208,6 +208,28 @@ attack_examples = {
 }
 ```
 
+### 环境演化型红队：攻击面不止 prompt（OpenART，2026-08）
+
+上面的攻击面清单默认攻击者在改"输入"——指令、网页、工具返回。OpenART（arXiv 2608.00677）给出了一条独立维度：**任务指令一字不改，只演化环境状态**。
+
+```python
+openart = {
+    "竞技场规模": "50 个领域、10000+ 已验证的有状态场景，工具/技能池 50 万+；任务中位需 97 次工具调用",
+    "覆盖": "统一评测 75 种 agent-模型配置",
+    "核心方法 EMHA（进化式马尔可夫超图攻击）": {
+        "做法": "黑盒；固定任务目标，只对环境状态做进化搜索",
+        "为什么有效": "护栏主要针对'指令里的恶意意图'训练，对'环境把 agent 一步步带偏'基本无感",
+        "效果": "池化攻击成功率 85.0%；在最复杂环境下比'仅改指令'的攻法高出 17% 以上",
+    },
+    "另一项发现": "agent 的运行时实现（scaffold / harness / 工具封装）本身就解释了相当一部分安全差异，"
+                 "而不只是底座模型能力决定安全性",
+}
+```
+
+两条可直接用于面试的推论：
+- 红队测试计划里必须有"环境状态"这一栏——只测 prompt 注入会系统性低估风险
+- 安全结论要绑定到"模型 + harness"这个组合，换模型不换 harness、或换 harness 不重测，结论都不成立
+
 ### Red Teaming 成熟度模型
 
 ```
@@ -244,6 +266,8 @@ attack_examples = {
 
 4. **追问："Red Teaming 如何与合规要求对接？"** — EU AI Act 要求高风险 AI 系统进行文档化的对抗测试；NIST AI RMF 将其定位在 Measure 功能下。实践中：(1) 使用 MITRE ATLAS 作为威胁分类标准；(2) 记录所有测试用例和结果；(3) 跟踪修复进度；(4) 保留测试报告作为合规证据。
 
+5. **追问："换个更安全的模型就够了吗？"** — 不够。OpenART 统一评测 75 种 agent-模型配置后发现，agent 的运行时实现（scaffold、工具封装、权限边界）本身就解释了相当一部分安全差异——同一个底座模型换个 harness，安全表现可能完全不同。所以：(1) 安全结论必须绑定"模型 + harness"组合，换任一侧都要重测；(2) 加固 harness（最小权限工具、出口白名单、状态变更审批）常比换模型收益更高；(3) 红队计划要覆盖"环境状态演化"这条攻击面，只测指令注入会系统性低估风险。
+
 ## 参考资料
 
 - [LLM Red Teaming: The Complete Step-By-Step Guide (Confident AI)](https://www.confident-ai.com/blog/red-teaming-llms-a-step-by-step-guide)
@@ -251,3 +275,4 @@ attack_examples = {
 - [Red-Teaming LLM Multi-Agent Systems via Communication Attacks (arXiv)](https://arxiv.org/abs/2502.14847)
 - [Red Teaming Playbook: Model Safety Testing Framework 2025 (CleverX)](https://cleverx.com/blog/red-teaming-playbook-for-model-safety-complete-implementation-framework-for-ai-operations-teams/)
 - [LLM Red Teaming Guide — Open Source (Promptfoo)](https://www.promptfoo.dev/docs/red-team/)
+- [OpenART: Scaling Agent Red Teaming via Open-Ended Environment Evolution (arXiv 2608.00677)](https://arxiv.org/abs/2608.00677)
