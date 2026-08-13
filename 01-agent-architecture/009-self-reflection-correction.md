@@ -178,6 +178,8 @@ Huang et al. (2023) 的研究《Large Language Models Cannot Self-Correct Reason
 
 7. **场景追问："你的 Agent 面对复杂问题时反思轮次过多，用户等待时间超过 30 秒。如何提升响应速度？"** — 这是"反思效率"问题。优化路径：(1) 并行化反思 → 在 Agent 执行主任务的同时，后台启动一个"反思 Agent"预判可能的问题；(2) 缓存反思结果 → 对相似的历史查询直接复用之前的反思；(3) 设置反思时间预算 → 单次反思不超过 X 秒；(4) 采用快速反思模式 → 用小模型快速扫描，只在必要时用大模型深度分析；(5) 流式输出 → 先给出初步答案，同时后台反思并在需要时更新答案。
 
+8. **追问："自我反思在长程任务里为什么会失效？"** — 因为自评的依据正是那份可能已经出错的上下文。任务越长上下文越膨胀，Agent 基于含错状态做自评，等于把错误"自我确认"下来，并在后续轮次里持续传播——这不是反思轮数不够，而是反馈来源根本不独立。LongHorizon-Harness（2026）的解法是把校验从主 Agent 里拆出去：交给一个独立的、只读环境的 Auditor，且状态只接受**环境已验证的事实**，模型自己的断言不入状态。WeaveBench 上 51.8% → 80.7%。这条同时也是对 Reflexion 的边界限定：反思的可靠性取决于反馈是否来自环境，自评 ≠ 环境验证。
+
 ## 参考资料
 
 - [Reflexion: Language Agents with Verbal Reinforcement Learning (arXiv:2303.11366)](https://arxiv.org/abs/2303.11366)
@@ -185,3 +187,4 @@ Huang et al. (2023) 的研究《Large Language Models Cannot Self-Correct Reason
 - [Reflexion (Prompt Engineering Guide)](https://www.promptingguide.ai/techniques/reflexion)
 - [Agentic Design Patterns Part 2: Reflection (Andrew Ng / DeepLearning.AI)](https://www.deeplearning.ai/the-batch/agentic-design-patterns-part-2-reflection/)
 - [How Do Agents Learn from Their Own Mistakes? (HuggingFace Blog)](https://huggingface.co/blog/Kseniase/reflection)
+- [LongHorizon-Harness: 长程任务中自评的错误传播与独立 Auditor 校验 (arXiv:2608.01964)](https://arxiv.org/abs/2608.01964)

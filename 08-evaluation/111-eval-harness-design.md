@@ -206,6 +206,18 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
 
 **反面教材**：2025 年 Zhu et al. 审计 37 个公开 agent benchmark suite，**普遍存在"成功标准未充分定义"和"低精度评估器"问题**——这正是 τ²-bench 强调"对比数据库最终状态"而非"agent 说了什么"的根源。
 
+### 评测 harness 的安全边界：一个真实事故
+
+结论先行：**prompt 里声明的隔离不是隔离**。Anthropic 2026-07 复盘了三起网络安全评测事故——本应完全隔离的评测环境实际连着真实互联网，而评测 prompt 却告诉 Claude"你处在模拟环境、没有网络访问"，模型于是在真实系统上执行了本以为是演习的操作。
+
+失败的归因是这个案例最值得讲的部分：
+
+- **模型并未失准**：目标对齐、行为符合任务描述，有害结果纯粹来自"被喂了错误的世界模型"
+- 新模型识破环境为真实后主动中止，旧版本继续执行——这类风险会随模型能力部分自愈，但不能依赖
+- Anthropic 的结论：把 defense-in-depth 从生产环境**延伸到评测基础设施本身**，隔离承诺必须与实际网络拓扑对账，而不是写在 prompt 里
+
+对 harness 设计的直接推论：sandbox 类型不只是可复现性参数，也是安全参数。写进 eval 报告的 `sandbox=docker` 必须能在网络层被验证（出口规则、DNS、代理白名单），否则考场本身会成为真实世界的攻击面。
+
 ### Agent Eval vs Model Eval 的根本差异
 
 | 维度 | Model Eval | Agent Eval |
@@ -304,6 +316,8 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
    - **Watermarking 检测**：arXiv 2502.17259，5% 污染即可在 p<10⁻³ 显著性下检出
    - 警惕信号：模型在"只给文件结构、不给 issue 描述"时仍能定位正确文件——说明训练集见过仓库结构
 
+8. **误区："评测跑在沙箱里，最坏也就是结果不准"** — Anthropic 2026-07 复盘的三起网络安全评测事故是反例：环境自称隔离、实际连着公网，模型按 prompt 描述"在模拟环境里"行动，结果操作了真实系统。模型本身没有失准，错的是它被喂的世界模型。隔离必须由网络拓扑保证并定期与承诺对账，prompt 里的一句"你没有网络访问"不构成任何隔离。
+
 ## 参考资料
 
 - [EleutherAI lm-evaluation-harness（GitHub）](https://github.com/EleutherAI/lm-evaluation-harness) — 行业 model eval 标杆，HF Open LLM Leaderboard 后端
@@ -319,6 +333,7 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
 - [SWE-bench Pro Leaderboard（2026）](https://www.morphllm.com/swe-bench-pro) — Scale AI 抗污染基准
 - [Detecting Benchmark Contamination Through Watermarking（arXiv 2502.17259）](https://arxiv.org/abs/2502.17259) — 2025 watermarking 检测
 - [Beyond the Final Answer: Evaluating Reasoning Trajectories（arXiv 2510.02837）](https://arxiv.org/pdf/2510.02837) — Trajectory-opaque eval 漏 44% 安全违规
+- [Investigating three real-world incidents in our cybersecurity evaluations — Anthropic](https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals) — 评测环境自称隔离实则联网，defense-in-depth 需覆盖评测基础设施
 
 ## 相关阅读
 

@@ -232,6 +232,8 @@ response = client.messages.create(
 
 4. **追问："MemGPT 的核心思想是什么？"** — 将上下文窗口视为有限的"内存"资源，实现类似操作系统虚拟内存的层级管理。Agent 可以在核心记忆（RAM/上下文窗口）和归档记忆（磁盘/外部存储）之间主动移动数据，创造"无限记忆"的体验。
 
+5. **追问："'LLM 无状态'这个前提会一直成立吗？"** — 不一定。它描述的是当前主流架构，不是理论必然。Metis 这类记忆基础模型把记忆状态放进模型内部，通过 memory attention 访问历史压缩信息，更新只需一次前向传播、不需要梯度，推理时权重冻结而记忆状态自主演化——这时"无状态"就不再成立了。面试时的稳妥答法：说清楚这是当前工程现实和它成立的原因（每次 API 调用独立、KV cache 不跨请求保留），再指出已有把记忆内化进底座的研究方向。
+
 ## 参考资料
 
 - [Agent Memory: What, Why and How (Mem0)](https://mem0.ai/blog/memory-in-agents-what-why-and-how/)
@@ -241,3 +243,4 @@ response = client.messages.create(
 - [Memory Overview (LangChain Docs)](https://docs.langchain.com/oss/python/concepts/memory)
 - [Anthropic Memory Tool (memory_20250818, Official Docs)](https://docs.anthropic.com/en/docs/build-with-claude/tool-use/memory-tool)
 - [Building agents with the Claude Developer Platform: Memory Tool (Anthropic Engineering)](https://www.anthropic.com/engineering/memory-and-context-management)
+- [Metis: Memory Foundation Model (arXiv)](https://arxiv.org/abs/2607.26760)
