@@ -12,6 +12,14 @@
 
 ---
 
+## 🗺️ 全库知识地图
+
+![Agent 技术栈全景](assets/agent-stack-map.png)
+
+> 四阶递进：入门基础（Agent 架构）→ 核心能力（RAG / 工具调用 / 多智能体 / 记忆 / 规划推理）→ 工程实践（提示 / 评估 / 安全）→ 生产生态（部署 / 框架）。源文件为 [assets/agent-stack-map.drawio](assets/agent-stack-map.drawio)，可用 draw.io 编辑更新。
+
+---
+
 ## ✨ 项目亮点
 
 - 🎯 **问题驱动学习** — 每个问题就是一个学习入口，告诉你"该学什么"以及"为什么要学"，避免漫无目的地啃文档
