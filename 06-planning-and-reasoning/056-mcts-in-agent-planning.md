@@ -11,27 +11,18 @@ Monte Carlo Tree Search (MCTS) 是一种结合树搜索与随机模拟的决策�
 
 ### MCTS 的四步循环
 
+```mermaid
+flowchart TD
+    S["1. 选择 Selection<br/>UCB1：胜率高+访问少优先"] --> E["2. 扩展 Expansion<br/>在叶节点生成新子节点"]
+    E --> SIM["3. 模拟 Simulation<br/>LLM 评估新节点价值"]
+    SIM --> B["4. 反向传播 Backpropagation<br/>更新路径上所有节点统计"]
+    B -- "进入下一轮迭代" --> S
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class S,E,B proc
+    class SIM agent
 ```
-        根节点（初始状态）
-           │
-    ┌──────┼──────┐
-    │      │      │
-   A(3/5) B(1/4) C(2/3)    ← 选择：UCB1 选 C（胜率高+访问少）
-                  │
-              ┌───┼───┐
-              │       │
-            C1(new) C2(new)  ← 扩展：生成新子节点
-              │
-          [模拟到终局]        ← 模拟：LLM 评估结果
-              │
-          反向传播 ↑↑↑        ← 更新路径上所有节点的统计
-
-四步循环：
-1. Selection（选择）：从根节点用 UCB1 策略向下选择
-2. Expansion（扩展）：在叶节点生成新的子节点
-3. Simulation（模拟）：评估新节点的价值
-4. Backpropagation（反向传播）：更新路径上所有节点的统计值
-```
+*MCTS 四步循环：UCB1 选择→扩展→模拟评估→反向传播，路径统计驱动探索-利用平衡。*
 
 ### MCTS 在 LLM Agent 中的实现
 
@@ -165,21 +156,18 @@ class LATS:
 
 ### LATS 的性能对比
 
-```
 HumanEval 编程任务（GPT-4）：
-┌──────────────────────┬──────────┐
-│ 方法                 │ Pass@1   │
-├──────────────────────┼──────────┤
-│ 直接生成             │ 82.0%    │
-│ CoT                  │ 83.5%    │
-│ Reflexion            │ 91.0%    │
-│ ToT (DFS)            │ 89.0%    │
-│ LATS (MCTS)          │ 94.4%    │
-└──────────────────────┴──────────┘
+
+| 方法 | Pass@1 |
+|------|--------|
+| 直接生成 | 82.0% |
+| CoT | 83.5% |
+| Reflexion | 91.0% |
+| ToT (DFS) | 89.0% |
+| LATS (MCTS) | 94.4% |
 
 WebShop（网页导航任务）：
-  ReAct: 40%  →  LATS: 75% (提升 87.5%)
-```
+ReAct: 40% → LATS: 75% (提升 87.5%)
 
 ### MCTS vs 其他搜索策略
 

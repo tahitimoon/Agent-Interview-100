@@ -50,14 +50,10 @@
 
 **关键对比 — Claude Code 的 "全塞 + compact" vs Aider 的 "检索式 repo map"**：
 
-```
-Claude Code 流派（全塞 + 智能压缩）          Aider 流派（外部检索）
-─────────────────────────────────           ─────────────────────────
-+ context 不丢，cross-file 推理强            + 小窗口模型也能在大 repo 工作
-+ 模型直接看到原文                            + 显式控制，可解释
-- 200K 窗口 + compact 算法依赖               - tree-sitter 不支持的语言失效
-- 长 trajectory 可能丢早期细节                - 仅给 outline 不给原文
-```
+| | Claude Code 流派（全塞 + 智能压缩） | Aider 流派（外部检索） |
+|---|---|---|
+| 优势 | context 不丢，cross-file 推理强；模型直接看到原文 | 小窗口模型也能在大 repo 工作；显式控制，可解释 |
+| 劣势 | 200K 窗口 + compact 算法依赖；长 trajectory 可能丢早期细节 | tree-sitter 不支持的语言失效；仅给 outline 不给原文 |
 
 #### 维度 2：Tool Registry & Discovery
 
@@ -99,14 +95,10 @@ Claude Code 的 Hook 系统是 2026 业界讨论最多的设计点。在 prompt 
 
 **三种沙箱路线的本质权衡**：
 
-```
-OS 原生（Codex）                    云端 VM（Devin/Replit/Cursor 3）         无沙箱（Claude Code/Cline/Aider）
-─────────────────────              ───────────────────────────────         ───────────────────────────────
-+ 本地零成本                        + 极致隔离（VM 级别）                    + 零延迟、零基础设施
-+ 文件直接 share                    + 可异步长跑（200 分钟自治）             + 用户拥有完整 host 能力
-- 平台差异（macOS ≠ Linux）         - 需要 cold start（10-60s）              - 必须配 permission + Hook 防线
-- 复杂规则维护                       - egress / data exfil 风险              - 用户审批疲劳是大问题
-```
+| | OS 原生（Codex） | 云端 VM（Devin/Replit/Cursor 3） | 无沙箱（Claude Code/Cline/Aider） |
+|---|---|---|---|
+| 优势 | 本地零成本；文件直接 share | 极致隔离（VM 级别）；可异步长跑（200 分钟自治） | 零延迟、零基础设施；用户拥有完整 host 能力 |
+| 劣势 | 平台差异（macOS ≠ Linux）；复杂规则维护 | 需要 cold start（10-60s）；egress / data exfil 风险 | 必须配 permission + Hook 防线；用户审批疲劳是大问题 |
 
 ### 三、Claude Code 扩展生态深度剖析（五机制协同）
 

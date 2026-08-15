@@ -72,6 +72,23 @@ class PromptVersionManager:
         self.promote(prompt_id, target_version, "active")
 ```
 
+```mermaid
+stateDiagram-v2
+    state "draft 草稿" as draft
+    state "testing 测试" as testing
+    state "active 活跃" as active
+    state "archived 归档" as archived
+    [*] --> draft: 创建新版本
+    draft --> testing: 提交测试
+    testing --> draft: 验证不通过，打回修改
+    testing --> active: 验证通过，上线
+    active --> archived: 新版本激活，旧版自动归档
+    archived --> active: 一键回滚
+    archived --> [*]
+```
+
+*draft→testing→active→archived 的版本生命周期：新版本激活自动归档旧版，可一键回滚。*
+
 ### Prompt 与代码分离
 
 ```python
@@ -217,18 +234,14 @@ Prompt 版本发布流程：
 
 ### 工具生态
 
-```
-┌──────────────┬─────────────────────────────────────┐
-│ 工具         │ 核心能力                             │
-├──────────────┼─────────────────────────────────────┤
-│ LangSmith    │ Prompt 版本管理 + 评估 + Tracing     │
-│ Braintrust   │ Prompt A/B 测试 + 评估 + 日志        │
-│ PromptLayer  │ Prompt 版本管理 + 请求日志 + 分析     │
-│ LaunchDarkly │ 特性开关 + 灰度发布 + A/B 测试        │
-│ Humanloop    │ Prompt 管理 + 评估 + 微调             │
-│ Git + CI/CD  │ Prompt 作为代码文件管理               │
-└──────────────┴─────────────────────────────────────┘
-```
+| 工具 | 核心能力 |
+|------|----------|
+| LangSmith | Prompt 版本管理 + 评估 + Tracing |
+| Braintrust | Prompt A/B 测试 + 评估 + 日志 |
+| PromptLayer | Prompt 版本管理 + 请求日志 + 分析 |
+| LaunchDarkly | 特性开关 + 灰度发布 + A/B 测试 |
+| Humanloop | Prompt 管理 + 评估 + 微调 |
+| Git + CI/CD | Prompt 作为代码文件管理 |
 
 ## 常见误区 / 面试追问
 

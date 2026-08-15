@@ -122,6 +122,19 @@ class CircuitBreaker:
 - **Open（熔断）**：所有请求立即拒绝，进入冷却期
 - **Half-Open（试探）**：允许少量请求通过，测试服务是否恢复
 
+```mermaid
+stateDiagram-v2
+    state "Closed 正常放行" as closed
+    state "Open 熔断拒绝" as open
+    state "Half-Open 试探" as half
+    [*] --> closed
+    closed --> open: 失败次数 ≥ 阈值
+    open --> half: 冷却期满
+    half --> closed: 试探成功
+    half --> open: 试探再失败
+```
+*重试管偶发故障，断路器管持续故障：失败达阈值熔断，冷却期满试探，成败决定回到正常或再次熔断。*
+
 ### 策略 4：降级回退（Fallback）
 
 当主工具不可用时，切换到备选方案：
@@ -185,13 +198,23 @@ class AgentExecutor:
 
 ### 生产级分层防御架构
 
+```mermaid
+flowchart TD
+    A["请求"] --> B["断路器<br/>挡持续失败"]
+    B --> C["速率限制"]
+    C --> D["重试 + 指数退避<br/>只重试瞬时错误"]
+    D --> E["工具执行"]
+    E -- "成功" --> F["返回结果"]
+    E -- "失败" --> G["降级回退<br/>备用工具 / 缓存"]
+    G --> H["错误信息回传 LLM<br/>自主调整策略"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class A,B,C,D,E proc
+    class G,H err
+    class F store
 ```
-请求 → [断路器] → [速率限制] → [重试 + 退避] → 工具执行
-                                                      │
-                                               成功 ←──┤──→ 失败
-                                                       │
-                                              [降级回退] → [错误回传 LLM]
-```
+*分层防御：请求先过断路器、限流、重试三道闸再执行；失败不硬重试，而是降级回退并把错误回传 LLM。*
 
 ### 工具编排的延迟放大问题
 

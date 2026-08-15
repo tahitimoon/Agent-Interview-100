@@ -11,17 +11,33 @@ Agent 系统的灰度发布和 A/B 测试是安全上线变更的核心工程实
 
 ### 灰度发布 vs A/B 测试
 
-```
-灰度发布（Canary）：                A/B 测试：
-├── 目的：验证技术稳定性            ├── 目的：比较业务效果
-├── 关注：有没有 bug/退化           ├── 关注：哪个版本更好
-├── 流程：小流量→逐步扩量→全量     ├── 流程：同时运行两个版本
-├── 决策：通过/回滚                 ├── 决策：选择胜出版本
-├── 时间：小时到天                  ├── 时间：天到周
-└── 指标：错误率、延迟、质量下限    └── 指标：业务指标、用户偏好
-```
+| 维度 | 灰度发布（Canary） | A/B 测试 |
+| --- | --- | --- |
+| 目的 | 验证技术稳定性 | 比较业务效果 |
+| 关注 | 有没有 bug/退化 | 哪个版本更好 |
+| 流程 | 小流量→逐步扩量→全量 | 同时运行两个版本 |
+| 决策 | 通过/回滚 | 选择胜出版本 |
+| 时间 | 小时到天 | 天到周 |
+| 指标 | 错误率、延迟、质量下限 | 业务指标、用户偏好 |
 
 ### Agent 灰度发布流程
+
+```mermaid
+flowchart TD
+    A["新版本"] --> B["离线评估门控<br/>Golden Dataset 回归"]
+    B --> C["Shadow 影子测试<br/>跑真实流量，不返用户"]
+    C --> D["Canary 5%"]
+    D --> Q{"指标健康?<br/>错误率/质量/延迟/成本"}
+    Q -- "否" --> R["自动回滚<br/>上个稳定版本"]
+    Q -- "是" --> E["逐级扩量<br/>25% → 50% → 100%"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C,D,E proc
+    class Q decision
+    class R err
+```
+*灰度四道闸：离线评估→Shadow→Canary 5%→逐级扩量，任一指标不健康即自动回滚。*
 
 ```python
 class AgentCanaryDeployment:

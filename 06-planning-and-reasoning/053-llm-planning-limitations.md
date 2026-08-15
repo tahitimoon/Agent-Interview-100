@@ -50,21 +50,17 @@ planning_limitations = {
 
 ### 实证数据：LLM 规划的真实表现
 
-```
 Blocksworld 规划任务（2024 基准测试）：
-┌──────────────────────┬────────────┬─────────────┐
-│ 方法                 │ 可行率     │ 最优率       │
-├──────────────────────┼────────────┼─────────────┤
-│ GPT-4 直接规划       │ ~35%       │ ~15%        │
-│ GPT-4 + CoT          │ ~42%       │ ~20%        │
-│ GPT-4 + Self-Verify  │ ~55%       │ ~30%        │
-│ LLM-Modulo (外部验证)│ ~82%       │ ~65%        │
-│ 传统规划器 (PDDL)    │ 100%       │ 100%        │
-└──────────────────────┴────────────┴─────────────┘
 
-结论：LLM 单独做规划远不如传统规划器可靠
-     但 LLM + 外部验证可以显著提升
-```
+| 方法 | 可行率 | 最优率 |
+|------|--------|--------|
+| GPT-4 直接规划 | ~35% | ~15% |
+| GPT-4 + CoT | ~42% | ~20% |
+| GPT-4 + Self-Verify | ~55% | ~30% |
+| LLM-Modulo (外部验证) | ~82% | ~65% |
+| 传统规划器 (PDDL) | 100% | 100% |
+
+结论：LLM 单独做规划远不如传统规划器可靠，但 LLM + 外部验证可以显著提升
 
 ### 缓解方案 1：LLM-Modulo 框架
 
@@ -110,6 +106,23 @@ class LLMModuloPlanner:
 
         return ValidationResult(is_valid=len(errors) == 0, errors=errors)
 ```
+
+```mermaid
+flowchart TD
+    T["任务"] --> G["LLM<br/>生成候选计划"]
+    G --> V["外部验证器<br/>语法 / 约束 / 可执行性"]
+    V --> Q{"可行?"}
+    Q -- "是" --> O["输出计划"]
+    Q -- "否" --> F["反馈错误信息<br/>修正重生成"]
+    F --> G
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class T,O,F proc
+    class G agent
+    class V,Q decision
+```
+*LLM 不能规划但能帮忙：候选由 LLM 生成，正确性由外部验证器把关，不过关带反馈重生成。*
 
 ### 缓解方案 2：混合规划架构
 

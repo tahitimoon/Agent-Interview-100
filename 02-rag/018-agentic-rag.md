@@ -22,15 +22,27 @@ Agentic RAG 在传统 RAG 的"检索→生成"流水线上增加了一个 AI Age
 
 Agentic RAG 不是简单的 RAG 改进版，而是**在 RAG 上增加了控制循环**。这个循环可以：
 
-```
-传统 RAG:   Query → Retrieve → Generate → Answer（线性流水线）
+传统 RAG：Query → Retrieve → Generate → Answer，线性流水线一发即忘。
 
-Agentic RAG: Query → Agent 决策 ←──────────────────────┐
-                     ├→ 需要检索？→ 从哪检索？→ 结果够好吗？ ─┘
-                     ├→ 需要工具？→ 调用 API/SQL/计算器
-                     ├→ 需要分解？→ 拆成子问题分别处理
-                     └→ 信息够了  → 生成最终回答
+```mermaid
+flowchart TD
+    Q["Query"] --> A{"Agent 决策"}
+    A -->|"需要检索？"| R["多源检索<br/>（向量库 / SQL / Web）"]
+    A -->|"需要工具？"| T["调用工具<br/>（API / SQL / 计算器）"]
+    A -->|"需要分解？"| D["拆成子问题<br/>分别处理"]
+    R --> C{"信息够了吗？"}
+    T --> C
+    D --> C
+    C -->|"不够，继续迭代"| A
+    C -->|"够了"| F["生成最终回答"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,C decision
+    class Q,R,T,D proc
+    class F agent
 ```
+*传统 RAG 是线性流水线一发即忘，Agentic RAG 把检索、工具、分解收进 Agent 控制循环，迭代到信息充分才生成回答。*
 
 ### 三种核心 Agent 类型
 

@@ -13,19 +13,26 @@
 
 ```
 上下文窗口 = LLM 能"看到"的全部信息
+```
 
-┌─────────────────────────────────────┐
-│           上下文窗口 (128K tokens)    │
-│                                     │
-│  System Prompt        ~2K tokens    │
-│  对话历史 (50轮)      ~30K tokens   │
-│  RAG 检索结果         ~5K tokens    │
-│  工具调用结果         ~3K tokens    │
-│  ─────────────────────────────      │
-│  已使用: ~40K tokens                │
-│  剩余给输出: ~88K tokens            │
-└─────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph CW["上下文窗口（128K tokens）"]
+        SP["System Prompt<br/>~2K"]
+        CH["对话历史（50 轮）<br/>~30K"]
+        RG["RAG 检索结果<br/>~5K"]
+        TR["工具调用结果<br/>~3K"]
+        OUT["剩余给输出<br/>~88K"]
+    end
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class SP,CH,RG,TR proc
+    class OUT neutral
+```
 
+*上下文窗口是固定 token 预算：System Prompt、对话历史、RAG、工具结果四类内容争抢同一空间，输出只能用剩下的部分。*
+
+```
 对话增长曲线：
 轮次  1: 500 tokens    ✅ 轻松
 轮次 10: 5,000 tokens  ✅ 正常

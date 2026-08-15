@@ -207,12 +207,19 @@ def sensitive_action_node(state):
 
 它把长程执行重构成一个任务状态管理问题，核心约束只有一条——**状态只接受环境已验证的事实**，模型的自我判断不算数：
 
+```mermaid
+flowchart TD
+    M["Manager<br/>维护任务状态"] -- "派发子任务" --> X["Executor<br/>零上下文执行，做完即弃"]
+    X -- "提交结果" --> A["Auditor<br/>只读核验环境"]
+    A -- "验证通过<br/>事实才写回" --> S["任务状态<br/>（唯一跨子任务载体）"]
+    S -- "据状态派发下一个子任务" --> M
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class M,X,A agent
+    class S store
 ```
-Manager   维护任务状态；根据状态派发下一个子任务
-Executor  每个子任务用全新上下文执行，做完即弃，不携带历史
-Auditor   只读地去环境里核实结果，验证通过的事实才允许写回状态
-          ↑ 三者构成闭环，状态是唯一跨子任务的载体
-```
+
+*状态只接受环境验证过的事实：Manager 派发、Executor 零上下文执行、Auditor 只读核验，围绕唯一任务状态闭环。*
 
 对比常见做法：让单个 Agent 在不断膨胀的上下文里自我评估"我刚才做成了吗"，一次误判会留在上下文里，后续每一步都在这条错误结论上继续推理，误差持续传播。外置状态 + 独立审计切断这条链路——Executor 的上下文每次归零，错误无处驻留；状态里的每条事实都被环境验证过。
 

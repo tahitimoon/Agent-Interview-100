@@ -19,18 +19,27 @@ Tool Gateway 是 Agent 与工具之间的安全中间层——Agent 不直接调
 
 ### Gateway 架构
 
+```mermaid
+sequenceDiagram
+    participant A as Agent(LLM)
+    participant G as Tool Gateway
+    participant P as 策略引擎(OPA)
+    participant T as 实际工具/API
+    A->>G: 工具调用请求（不持任何凭证）
+    G->>G: 鉴权 · 输入验证 · 限流
+    G->>P: 权限检查 evaluate()
+    alt 允许
+        P-->>G: allowed
+        G->>T: 放行执行
+        T-->>G: 执行结果
+        G->>G: 审计日志 · 结果过滤
+        G-->>A: 返回结果（已脱敏）
+    else 拒绝
+        P-->>G: denied
+        G-->>A: {"error": "权限不足"}
+    end
 ```
-┌──────────┐     ┌────────────────────┐     ┌──────────────┐
-│  Agent   │────→│    Tool Gateway    │────→│  实际工具/API │
-│ (LLM)   │     │                    │     │              │
-│          │     │ 1. 身份验证        │     │  - 天气 API  │
-│ 不持有   │     │ 2. 权限检查(OPA)   │     │  - 数据库    │
-│ 任何凭证 │     │ 3. 输入验证        │     │  - 邮件服务  │
-│          │     │ 4. 速率限制        │     │  - 文件系统  │
-│          │←────│ 5. 审计日志        │←────│              │
-└──────────┘     │ 6. 结果过滤        │     └──────────────┘
-                 └────────────────────┘
-```
+*Agent 不持有任何凭证：每次调用都被 Gateway 逐层拦截——鉴权、权限、校验、限流、审计、过滤。*
 
 关键原则：**Agent 永远不直接与基础设施 API 通信。** Gateway 拦截每个请求，做验证、授权、执行。Agent 不持有任何凭证。
 

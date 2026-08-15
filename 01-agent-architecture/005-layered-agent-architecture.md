@@ -17,20 +17,28 @@ Orchestrator-Worker 是一种集中式任务管理架构：一个智能控制器
 
 ### 核心架构
 
+```mermaid
+flowchart TD
+    subgraph ORCH["Orchestrator —— 强模型 / 规划"]
+        O["任务分解 → 分配 → 进度追踪 → 结果综合"]
+    end
+    subgraph WORK["Workers —— 专业化子 Agent（可用更小更便宜的模型）"]
+        W1["Worker A<br/>搜索"]
+        W2["Worker B<br/>分析"]
+        W3["Worker C<br/>写作"]
+    end
+    O -->|"分配子任务"| W1
+    O -->|"分配子任务"| W2
+    O -->|"分配子任务"| W3
+    W1 -->|"结果回传"| O
+    W2 -->|"结果回传"| O
+    W3 -->|"结果回传"| O
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class O agent
+    class W1,W2,W3 proc
 ```
-                    ┌──────────────────┐
-                    │   Orchestrator   │
-                    │  (强模型 / 规划)  │
-                    └────────┬─────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-              ▼              ▼              ▼
-        ┌──────────┐  ┌──────────┐  ┌──────────┐
-        │ Worker A │  │ Worker B │  │ Worker C │
-        │ (搜索)   │  │ (分析)   │  │ (写作)   │
-        └──────────┘  └──────────┘  └──────────┘
-```
+*Orchestrator-Worker 两层分工：强模型编排器负责分解、分配、综合，专业化 Worker 并行执行并回传结果。*
 
 ### Orchestrator 的职责
 

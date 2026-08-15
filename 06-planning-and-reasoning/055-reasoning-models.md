@@ -146,14 +146,21 @@ def choose_model_and_thinking(task):
 
 实战中的混合策略（Model Routing）：
 
+```mermaid
+flowchart TD
+    R["Agent Router<br/>按任务类型路由"] --> Q1{"规划 / 关键判断<br/>复杂决策?"}
+    Q1 -- "是" --> A["旗舰档<br/>thinking on"]
+    Q1 -- "否" --> Q2{"常规工具执行<br/>信息检索?"}
+    Q2 -- "是" --> B["旗舰档<br/>thinking off"]
+    Q2 -- "否" --> Q3{"格式化 / 摘要<br/>翻译?"}
+    Q3 -- "是" --> C["中端档<br/>Sonnet 5 / Flash"]
+    Q3 -- "否" --> D["轻量档<br/>实时 / 高并发"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class R,A,B,C,D proc
+    class Q1,Q2,Q3 decision
 ```
-Agent Router（按任务类型路由）
-│
-├── 规划 / 关键判断 / 复杂决策  → 旗舰 + thinking on
-├── 常规工具执行 / 信息检索     → 旗舰 + thinking off（或中端档）
-├── 格式化 / 摘要 / 翻译        → 中端档（Sonnet 5 / Flash）
-└── 实时对话 / 高并发           → 轻量档
-```
+*生产 Agent 按任务路由档位：关键判断开 thinking，常规执行关，格式化走中端，实时走轻量。*
 
 Model Routing 已是生产 Agent 的核心组件，详见 [#089 — 模型路由](../10-production-and-deployment/089-model-routing.md)。
 
@@ -182,28 +189,25 @@ RL 训练信号方面，可验证奖励（数学/代码可自动判对错）已�
 
 ### 六、成本与延迟（2026 口径）
 
-```
 旗舰通用模型定价（输入/输出 per MTok，近似值，以官方为准）：
-┌──────────────────┬──────────┬──────────┬──────────────────┐
-│ 模型             │ 输入     │ 输出      │ 备注             │
-├──────────────────┼──────────┼──────────┼──────────────────┤
-│ Claude Sonnet 5  │ $2       │ $10      │ 约同档旗舰一半    │
-│ Claude Opus 4.7  │ （见官方）│（见官方） │ 顶级档，含 thinking │
-│ GPT-5.6 Sol      │ （见官方）│（见官方） │ 旗舰档            │
-│ Gemini 3.1 Pro   │ （见官方）│（见官方） │ 旗舰档            │
-│ Gemini 3.5 Flash │ （见官方）│（见官方） │ 专为 agentic workflow │
-└──────────────────┴──────────┴──────────┴──────────────────┘
+
+| 模型 | 输入 | 输出 | 备注 |
+|------|------|------|------|
+| Claude Sonnet 5 | $2 | $10 | 约同档旗舰一半 |
+| Claude Opus 4.7 | （见官方） | （见官方） | 顶级档，含 thinking |
+| GPT-5.6 Sol | （见官方） | （见官方） | 旗舰档 |
+| Gemini 3.1 Pro | （见官方） | （见官方） | 旗舰档 |
+| Gemini 3.5 Flash | （见官方） | （见官方） | 专为 agentic workflow |
 
 注意：以上未标具体数字者请查官方价目，禁止照抄过期数字。
 
 关键成本事实：
-  · thinking token 单独计费（计入输出），开 thinking 会显著拉高单次成本
-  · 一道复杂数学/agent 规划题可能产生 5k-20k 思考 token
-  · 延迟：thinking off → 1-5s；thinking on → 10-120s（随复杂度）
 
-成本控制实战见 [#088 — 成本优化](../10-production-and-deployment/088-cost-optimization.md)
-延迟优化（streaming/缓存/批处理）见 [#090 — 延迟优化](../10-production-and-deployment/090-latency-optimization.md)
-```
+- thinking token 单独计费（计入输出），开 thinking 会显著拉高单次成本
+- 一道复杂数学/agent 规划题可能产生 5k-20k 思考 token
+- 延迟：thinking off → 1-5s；thinking on → 10-120s（随复杂度）
+
+成本控制实战见 [#088 — 成本优化](../10-production-and-deployment/088-cost-optimization.md)，延迟优化（streaming/缓存/批处理）见 [#090 — 延迟优化](../10-production-and-deployment/090-latency-optimization.md)
 
 ### 七、高分≠可信：SWE-bench 信任危机
 

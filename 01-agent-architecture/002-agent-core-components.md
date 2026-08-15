@@ -142,15 +142,25 @@ class MemoryModule:
 
 ### 四大模块的协作闭环
 
+```mermaid
+flowchart TD
+    A["用户输入"] --> B["感知<br/>结构化信息"]
+    B --> C["推理<br/>结合记忆做决策"]
+    C -->|"写入新信息"| M["记忆<br/>工作 / 短期 / 长期"]
+    M -->|"检索相关上下文"| C
+    C --> D["行动<br/>工具调用 / 执行"]
+    D --> E["执行结果<br/>Observation"]
+    E -->|"反馈回感知"| B
+    C --> Q{"任务完成?"}
+    Q -- "是" --> F["最终答案"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class B,C,D,M agent
+    class A,E,F proc
+    class Q decision
 ```
-用户输入 → [感知] → 结构化信息
-                        ↓
-              [记忆] ← [推理] → 决策
-                        ↓
-              [行动] → 执行结果（Observation）
-                        ↓
-              反馈回 [感知]，开始下一轮循环
-```
+*四大模块构成认知闭环：感知把输入结构化，推理结合记忆做决策，行动的 Observation 反馈回感知，循环直至任务完成。*
 
 这个闭环持续运转，直到推理模块判断任务已完成（或达到最大步数限制）。四个模块的集成质量决定了 Agent 的整体能力——推理依赖记忆提供上下文，记忆依赖感知获取新信息，行动依赖推理做决策，感知处理行动的结果。
 

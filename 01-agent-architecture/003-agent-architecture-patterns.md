@@ -336,18 +336,29 @@ if user_explicitly_requests():
 
 **核心机制：** 借鉴蒙特卡洛树搜索（MCTS），将 Agent 的行动空间建模为一棵树，同时探索多条路径，评估每条路径的质量，在死胡同时回溯尝试其他分支。
 
+```mermaid
+flowchart TD
+    R["根节点<br/>初始状态"] --> A["行动 A"]
+    R --> B["行动 B"]
+    R --> C["行动 C"]
+    A --> A1["A1 ✗ 死路"]
+    A --> A2["A2 ✓ 有效"]
+    B --> B1["B1 ✓ 有效"]
+    C --> C1["C1 ✗ 死路"]
+    C --> C2["C2 ✓ 有效"]
+    A1 -.->|"回溯"| A
+    C1 -.->|"回溯"| C
+    A2 -->|"继续展开"| O["最优路径"]
+    B1 -->|"继续展开"| O
+    C2 -->|"继续展开"| O
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class R agent
+    class A,B,C,A2,B1,C2,O proc
+    class A1,C1 err
 ```
-                     根节点（初始状态）
-                    /        |         \
-              Action A    Action B    Action C
-              /    \         |         /    \
-           A1      A2      B1       C1      C2
-           ✗      ✓        ✓        ✗       ✓
-                   ↓        ↓                ↓
-                  展开     展开             展开
-                   ↓
-                最优路径
-```
+*LATS 把行动空间建模为树：并行探索多分支，死路回溯，有效分支继续展开，最终收敛到最优路径。*
 
 **优势：**
 - 通过并行探索多条路径，找到更高质量的解
@@ -414,17 +425,22 @@ class HybridAgent:
 
 ### 选择决策树
 
+```mermaid
+flowchart TD
+    Q1{"任务结构明确?"} -- "是" --> Q2{"步骤间<br/>大量依赖?"}
+    Q1 -- "否" --> Q3{"需要<br/>高可靠性?"}
+    Q2 -- "是" --> P1["Plan-and-Execute"]
+    Q2 -- "否" --> P2["Plan-and-Execute<br/>并行执行"]
+    Q3 -- "否" --> P3["ReAct"]
+    Q3 -- "是" --> Q4{"预算允许<br/>高成本?"}
+    Q4 -- "是" --> P4["LATS"]
+    Q4 -- "否" --> P5["ReAct + Reflexion"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q1,Q2,Q3,Q4 decision
+    class P1,P2,P3,P4,P5 proc
 ```
-任务是否结构明确？
-├── 是 → 步骤间是否有依赖关系？
-│        ├── 大量依赖 → Plan-and-Execute
-│        └── 独立步骤 → Plan-and-Execute（并行执行）
-└── 否 → 是否需要高可靠性？
-         ├── 是 → 预算允许高成本？
-         │        ├── 是 → LATS
-         │        └── 否 → ReAct + Reflexion
-         └── 否 → ReAct
-```
+*按任务结构明确性、依赖关系、可靠性需求、预算四问选出架构模式。*
 
 ## 常见误区 / 面试追问
 

@@ -180,15 +180,26 @@ longmemeval = {
 
 **典型评估流水线**（ReMe、Mem0、MemMachine 等都遵循）：
 
+```mermaid
+flowchart LR
+    subgraph S1["Stage 1：Memory Ingestion（摄入）"]
+        A["历史 Sessions"] --> B["提取事实 / 关系"]
+        B --> C["记忆库<br/>向量库 / 图库"]
+    end
+    subgraph S2["Stage 2：Memory Retrieval & QA（检索问答）"]
+        D["评测问题"] --> E["检索 Top-k 记忆"]
+        E --> F["LLM 生成答案"]
+        F --> G["LLM-as-Judge 评分<br/>（gpt-4o · 与人类专家一致性 ＞97%）"]
+    end
+    C --- D
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class B,E proc
+    class A,C,D store
+    class F,G agent
 ```
-Stage 1：Memory Ingestion（摄入）
-  历史 sessions 逐条进入 Agent → 提取事实/关系 → 写入向量库或图库
-
-Stage 2：Memory Retrieval & QA（检索+回答）
-  评测问题 → 检索 top-k 记忆 → LLM 生成答案 → LLM-as-Judge 评分
-  
-评分模型：gpt-4o-2024-08-06，与人类专家一致性 >97%
-```
+*记忆基准先摄入后评测：Stage 1 把历史会话写入记忆库，Stage 2 检索问答并由 LLM-as-Judge 打分。*
 
 **2025 SOTA 参考**（用于面试时给出量化对比）：
 

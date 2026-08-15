@@ -46,13 +46,21 @@ output = await pipeline.run("写一篇关于 AI Agent 的技术博客")
 
 ### 模式 2：Hub-Spoke（中心辐射 / Coordinator 模式）
 
+```mermaid
+flowchart LR
+    U["用户"] --> H["协调器<br/>分析任务 · 分派"]
+    H --> S1["专家 Agent A"]
+    H --> S2["专家 Agent B"]
+    H --> S3["专家 Agent C"]
+    S1 --> F["汇总输出"]
+    S2 --> F
+    S3 --> F
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class H,S1,S2,S3 agent
+    class U,F proc
 ```
-              ┌──→ 专家 Agent A ──┐
-              │                    │
-用户 → 协调器 ├──→ 专家 Agent B ──┤→ 协调器 → 输出
-              │                    │
-              └──→ 专家 Agent C ──┘
-```
+*Hub-Spoke：协调器分派给专家、专家结果回到协调器汇总——集中控制，但协调器是单点瓶颈。*
 
 ```python
 class HubSpokeOrchestrator:
@@ -87,14 +95,22 @@ coordinator = LlmAgent(
 
 ### 模式 3：Hierarchical（层级结构）
 
+```mermaid
+flowchart TD
+    CEO["CEO Agent<br/>战略分解"] --> V1["VP·研发"]
+    CEO --> V2["VP·市场"]
+    CEO --> V3["VP·产品"]
+    V1 --> W1["前端 Agent"]
+    V1 --> W2["后端 Agent"]
+    V2 --> W3["营销 Agent"]
+    V3 --> W4["设计 Agent"]
+    V3 --> W5["PM Agent"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class CEO,V1,V2,V3 agent
+    class W1,W2,W3,W4,W5 proc
 ```
-              CEO Agent
-            /     |     \
-     VP-研发  VP-市场  VP-产品
-      / \       |       / \
-   前端  后端  营销   设计  PM
-   Agent Agent Agent  Agent Agent
-```
+*Hierarchical：CEO → VP → 专家 Agent 逐级分解、自底向上汇报。*
 
 ```python
 class HierarchicalOrchestrator:

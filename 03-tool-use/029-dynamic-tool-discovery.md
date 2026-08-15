@@ -72,6 +72,19 @@ class MCPClient:
             self.agent.update_tools(updated_tools)
 ```
 
+```mermaid
+sequenceDiagram
+    participant S as MCP Server
+    participant C as MCP Client
+    participant A as Agent(LLM)
+    S->>S: 运行时注册 / 注销工具
+    S-->>C: notifications/tools/list_changed
+    C->>S: tools/list（重新拉取）
+    S-->>C: 返回最新工具列表
+    C->>A: 更新可用工具清单
+```
+*动态发现 = 通知 + 拉取：Server 一注册/注销就广播 list_changed，Client 重新 tools/list 刷新 Agent 的工具清单。*
+
 **典型场景：** 用户登录后，Server 根据权限暴露不同工具；Session 从"浏览"阶段进入"购买"阶段时，新增支付相关工具。
 
 ### 方式 2：语义检索（Tool RAG）

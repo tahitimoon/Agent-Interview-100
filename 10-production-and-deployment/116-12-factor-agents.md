@@ -36,6 +36,22 @@ while True:
     context.append(result)
 ```
 
+```mermaid
+flowchart TD
+    A["上下文（事件流）<br/>初始事件起步"] --> L["LLM 决定下一步<br/>输出结构化 tool call"]
+    L --> Q{"intent == done?"}
+    Q -- "否" --> X["确定性代码<br/>执行这一步"]
+    X -- "结果回灌上下文" --> A
+    Q -- "是" --> F["返回最终答案"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class L agent
+    class A,X,F proc
+    class Q decision
+```
+*Agent = 确定性外壳 + LLM 决策内核：LLM 定下一步、代码执行、结果回灌上下文，12 条原则都在加固这个循环。*
+
 这个循环里只有三件事：**LLM 决定下一步 → 代码执行 → 结果进上下文 → 重复**。12 条原则中的每一条，都是在加固这个循环的某一个面——让 prompt 可控、让上下文可管、让状态可恢复、让错误可自愈、让人工可介入。理解了这个循环，就理解了 12-Factor Agents 的全部锚点。
 
 ### 12 条原则逐条解读

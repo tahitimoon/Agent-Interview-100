@@ -114,6 +114,24 @@ class ConsensusProtocol:
         return conclusions.count(most_common) / len(conclusions)
 ```
 
+```mermaid
+flowchart TD
+    A["各 Agent 提议 / 修改立场"] --> B["计算一致率"]
+    B --> Q1{"一致率 ≥ 阈值？"}
+    Q1 -- "是" --> M["合并共识"]
+    Q1 -- "否" --> Q2{"轮次 > 上限？"}
+    Q2 -- "否" --> E["阈值 ×0.95<br/>进入下一轮"]
+    E --> A
+    Q2 -- "是" --> D["降级：投票 / 人工裁决"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,E,M proc
+    class Q1,Q2 decision
+    class D err
+```
+*共识是有降级的迭代辩论：每轮提议并计算一致率，达标即合并；阈值逐轮放宽，超最大轮次降级为投票或人工裁决。*
+
 **关键设计点：**
 - 动态共识阈值：根据任务紧急度和轮次调整
 - 最大轮次限制：防止无限辩论

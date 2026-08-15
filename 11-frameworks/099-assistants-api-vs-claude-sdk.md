@@ -11,29 +11,22 @@ OpenAI 和 Anthropic 分别推出了官方 Agent 开发方案，代表了两种�
 
 ### 核心对比
 
-```
-┌──────────────────┬───────────────────┬───────────────────┐
-│ 维度             │ OpenAI Agents SDK │ Claude Agent SDK  │
-├──────────────────┼───────────────────┼───────────────────┤
-│ 发布时间         │ 2025-03           │ 2025-09 (重命名)  │
-│ 包名             │ openai-agents /   │ claude-agent-sdk  │
-│                  │ @openai/agents    │                   │
-│ 设计哲学         │ 最小抽象          │ 工具优先+MCP      │
-│ 核心概念         │ Agent/Handoff/    │ ClaudeAgentOptions│
-│                  │ Guardrails        │ /query/Subagent   │
-│ 底层 API         │ Responses API     │ Messages API+MCP  │
-│ 模型支持         │ OpenAI 优先       │ Claude 专属       │
-│ 工具协议         │ Function Calling  │ MCP（开放标准）   │
-│ 状态管理         │ Responses API     │ Hooks + 文件      │
-│                  │ （云端托管）      │ 检查点            │
-│ 多 Agent         │ Handoff 模式      │ Subagent 派生     │
-│ Human-in-the-Loop│ 需自行实现        │ permission_mode   │
-│ 追踪/可观测      │ 内置 Tracing      │ Hooks 钩子        │
-│ 语言支持         │ Python+TypeScript │ Python+TypeScript │
-│ 开源             │ 是                │ 是                │
-│ 适用场景         │ 通用 Agent        │ Coding/工具密集   │
-└──────────────────┴───────────────────┴───────────────────┘
-```
+| 维度 | OpenAI Agents SDK | Claude Agent SDK |
+|------|-------------------|------------------|
+| 发布时间 | 2025-03 | 2025-09（重命名） |
+| 包名 | openai-agents / @openai/agents | claude-agent-sdk |
+| 设计哲学 | 最小抽象 | 工具优先+MCP |
+| 核心概念 | Agent/Handoff/Guardrails | ClaudeAgentOptions/query/Subagent |
+| 底层 API | Responses API | Messages API+MCP |
+| 模型支持 | OpenAI 优先 | Claude 专属 |
+| 工具协议 | Function Calling | MCP（开放标准） |
+| 状态管理 | Responses API（云端托管） | Hooks + 文件检查点 |
+| 多 Agent | Handoff 模式 | Subagent 派生 |
+| Human-in-the-Loop | 需自行实现 | permission_mode |
+| 追踪/可观测 | 内置 Tracing | Hooks 钩子 |
+| 语言支持 | Python+TypeScript | Python+TypeScript |
+| 开源 | 是 | 是 |
+| 适用场景 | 通用 Agent | Coding/工具密集 |
 
 ### OpenAI Agents SDK
 
@@ -197,28 +190,17 @@ key_differences = {
 
 ### 第三方替代方案
 
-```
 除了官方 SDK，还有模型无关或厂商生态的选择：
 
-┌──────────────────┬───────────────────────────────────┐
-│ 方案             │ 特点                              │
-├──────────────────┼───────────────────────────────────┤
-│ Vercel AI SDK    │ 真正模型无关，支持 OpenAI/Claude/ │
-│                  │ Gemini，TypeScript 优先           │
-├──────────────────┼───────────────────────────────────┤
-│ LangGraph        │ 1.0 GA（2025-10），durable agent  │
-│                  │ 首个稳定版，月 PyPI 下载超 3800 万│
-├──────────────────┼───────────────────────────────────┤
-│ Microsoft Agent  │ 2026-04 发布 1.0 GA，Azure 生态， │
-│ Framework        │ 企业级多 Agent 编排               │
-├──────────────────┼───────────────────────────────────┤
-│ Google ADK       │ Agent Development Kit，原生集成   │
-│                  │ A2A 协议 + Vertex AI Agent Engine │
-├──────────────────┼───────────────────────────────────┤
-│ 自研             │ 完全控制，无依赖，                 │
-│                  │ 但需要自己处理所有细节             │
-└──────────────────┴───────────────────────────────────┘
+| 方案 | 特点 |
+|------|------|
+| Vercel AI SDK | 真正模型无关，支持 OpenAI/Claude/Gemini，TypeScript 优先 |
+| LangGraph | 1.0 GA（2025-10），durable agent 首个稳定版，月 PyPI 下载超 3800 万 |
+| Microsoft Agent Framework | 2026-04 发布 1.0 GA，Azure 生态，企业级多 Agent 编排 |
+| Google ADK | Agent Development Kit，原生集成 A2A 协议 + Vertex AI Agent Engine |
+| 自研 | 完全控制，无依赖，但需要自己处理所有细节 |
 
+```
 选择决策：
 ├── 绑定 OpenAI → OpenAI Agents SDK
 ├── 绑定 Claude + 需要 MCP → Claude Agent SDK

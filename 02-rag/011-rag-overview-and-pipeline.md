@@ -38,19 +38,23 @@ LLM 无法访问企业内部文档、私有数据库或最新的领域知识。�
 
 ### RAG 整体架构
 
+```mermaid
+flowchart TD
+    subgraph offline["离线 · Indexing Pipeline"]
+        A["数据源"] --> B["清洗"] --> C["分块"] --> D["Embedding"] --> E["向量数据库"]
+    end
+    subgraph online["在线 · Retrieval → Generation"]
+        F["用户查询"] --> G["查询理解"] --> H["检索 + 重排序"]
+        H --> I["上下文组装<br/>+ Prompt 构建"]
+        I --> J["LLM 生成"] --> K["输出验证"]
+    end
+    E -.->|"离线索引供在线检索"| H
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class A,B,C,D,F,G,H,I,J,K proc
+    class E store
 ```
-离线阶段                          在线阶段
-┌──────────────────┐   ┌───────────────────────────────────────┐
-│  Indexing        │   │  Retrieval          Generation        │
-│  Pipeline        │   │  Pipeline           Pipeline          │
-│                  │   │                                       │
-│ 数据源 → 清洗    │   │ 用户查询 → 查询理解  → 检索 + 重排序  │
-│   → 分块         │   │                        ↓              │
-│   → Embedding    │   │               上下文组装 + Prompt 构建 │
-│   → 向量数据库   │   │                        ↓              │
-│                  │   │                  LLM 生成 → 输出验证   │
-└──────────────────┘   └───────────────────────────────────────┘
-```
+*生产级 RAG 由离线索引流水线与在线检索/生成流水线构成，检索质量决定生成上限。*
 
 核心流程：
 1. **索引（Indexing）**：离线阶段——将文档分块、生成 Embedding、存入向量数据库
@@ -248,19 +252,20 @@ RAG 并非万能。它自身也存在问题：
 
 #### 决策框架：何时全塞上下文，何时仍需 RAG
 
+```mermaid
+flowchart TD
+    Q{"知识源规模与<br/>问题复杂度？"}
+    Q -->|"单文档 / 小语料"| A["✅ 全塞上下文<br/>简单、零检索延迟"]
+    Q -->|"大语料 / 频繁更新"| B["✅ RAG 按需检索<br/>成本可控、召回为关键"]
+    Q -->|"多跳 / 跨文档推理"| C["✅ Agentic RAG<br/>多轮检索、迭代充分性判断"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class Q decision
+    class A,B proc
+    class C agent
 ```
-              我的知识源有多大？问题有多复杂？
-                         │
-     ┌───────────────────┼───────────────────┐
-     ▼                   ▼                   ▼
- 单文档/小语料        大语料/频繁更新      多跳/跨文档推理
- (< 200K token)      (> 1M token)        (需串联多源)
-     │                   │                   │
-     ▼                   ▼                   ▼
- ✅ 全塞上下文        ✅ RAG 按需检索      ✅ Agentic RAG
- 简单、零检索延迟     成本可控、召回为关键  多轮检索+推理（见 #018）
- 留意 Lost in Middle   知识库质量是瓶颈    迭代充分性判断
-```
+*按知识源规模与问题复杂度选路：小语料全塞上下文，大语料 RAG 按需检索，多跳推理交给 Agentic RAG。*
 
 三条经验法则（按维度查表）：
 

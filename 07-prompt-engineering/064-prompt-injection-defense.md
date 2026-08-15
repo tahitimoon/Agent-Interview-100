@@ -223,30 +223,26 @@ class SecurityMonitor:
 
 ### 纵深防御架构总览
 
+```mermaid
+flowchart TD
+    U["用户输入"] --> F["输入过滤<br/>拦截明显攻击"]
+    F --> P["Prompt 隔离<br/>系统指令与用户输入分隔"]
+    P --> L["LLM 处理"]
+    L --> V["输出验证<br/>检查泄露/越权/异常"]
+    V --> A["权限检查<br/>高风险操作需确认"]
+    A --> M["监控日志<br/>记录和告警"]
+    M --> S["安全输出"]
+    F -- "命中注入模式" --> R["拒绝请求"]
+    A -- "未获确认" --> H["拒绝 / 人工确认"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class F,P,V,A,M,S proc
+    class L agent
+    class R,H err
 ```
-用户输入
-  │
-  ▼
-[输入过滤] ──→ 拒绝明显攻击
-  │
-  ▼
-[Prompt 隔离] ──→ 系统指令与用户输入明确分隔
-  │
-  ▼
-[LLM 处理]
-  │
-  ▼
-[输出验证] ──→ 检查泄露/越权/异常
-  │
-  ▼
-[权限检查] ──→ 高风险操作需确认
-  │
-  ▼
-[监控日志] ──→ 记录和告警
-  │
-  ▼
-安全输出
-```
+
+*纵深防御六层串联：输入过滤→Prompt 隔离→LLM→输出验证→权限检查→监控，单层皆可绕过，叠加才有拦截面。*
 
 ## 常见误区 / 面试追问
 

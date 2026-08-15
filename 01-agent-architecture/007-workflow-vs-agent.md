@@ -118,23 +118,22 @@ class HybridPipeline:
 
 回答以下问题来选择方案：
 
+```mermaid
+flowchart TD
+    Q1{"任务复杂到需要<br/>自适应决策?"} -- "否" --> W["确定性工作流"]
+    Q1 -- "是" --> Q2{"简单 RAG 或<br/>工具调用能解决?"}
+    Q2 -- "是" --> T["工具增强的 LLM<br/>不需要 Agent"]
+    Q2 -- "否" --> Q3{"涉及不确定性<br/>和多步推理?"}
+    Q3 -- "否" --> WL["确定性工作流<br/>+ LLM 辅助"]
+    Q3 -- "是" --> Q4{"给 Agent 自主权<br/>的风险可接受?"}
+    Q4 -- "是" --> SA["自主 Agent"]
+    Q4 -- "否" --> MH["混合架构<br/>Agent + Human-in-the-Loop"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q1,Q2,Q3,Q4 decision
+    class W,T,WL,SA,MH proc
 ```
-1. 任务是否复杂到需要自适应决策？
-   否 → 确定性工作流
-   是 → 继续 ↓
-
-2. 简单的 RAG 或工具调用能否解决？
-   是 → 不需要 Agent，用工具增强的 LLM
-   否 → 继续 ↓
-
-3. 流程是否涉及不确定性和多步推理？
-   是 → Agent
-   否 → 确定性工作流 + LLM 辅助
-
-4. 给 Agent 自主权的风险是否可接受？
-   是 → 自主 Agent
-   否 → 混合架构（Agent + Human-in-the-Loop）
-```
+*四问定控制权归属：复杂度、简单方案可解性、不确定性、风险，逐级从确定性工作流升级到自主 Agent。*
 
 ### 关键洞察
 

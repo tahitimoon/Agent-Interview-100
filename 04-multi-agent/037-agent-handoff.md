@@ -13,21 +13,20 @@ Agent Handoff 是多 Agent 系统中一个 Agent 将控制权、任务和对话�
 
 单个 Agent 配备太多工具或过大的上下文时，决策质量会下降。Handoff 允许将任务路由给专精的 Agent：
 
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant R as 路由 Agent
+    participant F as 退货 Agent
+    participant P as 财务 Agent
+    U->>R: 我想退货并了解退款进度
+    R->>F: transfer_to_refund（Handoff，交接上下文）
+    F->>U: 处理退货
+    U->>F: 追问退款进度
+    F->>P: transfer_to_finance（Handoff，交接上下文）
+    P-->>U: 返回退款进度
 ```
-用户: "我想退货并了解退款进度"
-         │
-    ┌────┴────┐
-    │ 路由 Agent│  判断需要退货处理
-    └────┬────┘
-         │ Handoff
-    ┌────┴────┐
-    │ 退货 Agent│  专精退货流程
-    └────┬────┘
-         │ Handoff（退货完成，用户追问退款）
-    ┌────┴────┐
-    │ 财务 Agent│  专精退款查询
-    └─────────┘
-```
+*Handoff 是控制权转移而非工具借用：路由 Agent 判断超纲即 transfer，退货完成后再交接给财务 Agent，全程传递对话上下文。*
 
 ### 实现方式 1：Tool-Based Handoff（OpenAI 模式）
 

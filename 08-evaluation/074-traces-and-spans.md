@@ -11,27 +11,21 @@ Trace 和 Span 是分布式追踪（Distributed Tracing）的核心概念，被�
 
 ### Trace 和 Span 的结构
 
+```mermaid
+flowchart TD
+    T["Trace：一次 Agent 执行<br/>「分析竞品A定价策略」· 总耗时 8.2s"]
+    T --> S1["Span：LLM 调用<br/>理解任务（1.2s）"]
+    T --> S2["Span：工具调用<br/>web_search（2.5s）"]
+    T --> S3["Span：LLM 调用<br/>分析结果（3.1s）"]
+    T --> S4["Span：LLM 调用<br/>生成报告（1.4s）"]
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class T neutral
+    class S1,S3,S4 agent
+    class S2 proc
 ```
-一次 Agent 执行的 Trace：
-
-Trace: "帮我分析竞品A的定价策略"（总耗时 8.2s）
-│
-├── Span: LLM 调用 - 理解任务（1.2s）
-│   ├── 属性: model=gpt-4o, tokens_in=150, tokens_out=80
-│   └── 输出: "需要搜索竞品A的定价信息"
-│
-├── Span: 工具调用 - web_search（2.5s）
-│   ├── 属性: tool=web_search, query="竞品A pricing strategy"
-│   └── 输出: [搜索结果 5 条]
-│
-├── Span: LLM 调用 - 分析结果（3.1s）
-│   ├── 属性: model=gpt-4o, tokens_in=2500, tokens_out=500
-│   └── 输出: "竞品A采用阶梯定价..."
-│
-└── Span: LLM 调用 - 生成报告（1.4s）
-    ├── 属性: model=gpt-4o, tokens_in=800, tokens_out=300
-    └── 输出: 最终分析报告
-```
+*一个 Trace 就是一棵 Span 树：每次 LLM / 工具调用都是可独立计时、可标错的子节点。*
 
 ### OpenTelemetry 集成
 
@@ -191,18 +185,14 @@ debug_workflow = """
 
 ### 主流工具对比
 
-```
-┌──────────────┬────────────┬────────────┬────────────┐
-│ 工具         │ 开源/商业  │ OTel 支持  │ 特色       │
-├──────────────┼────────────┼────────────┼────────────┤
-│ Langfuse     │ 开源       │ ✓          │ 最流行的开源│
-│ LangSmith    │ 商业       │ 部分       │ LangChain  │
-│ Arize Phoenix│ 开源       │ ✓          │ ML + LLM   │
-│ Traceloop    │ 开源       │ ✓ 原生     │ OTel 原生  │
-│ Datadog      │ 商业       │ ✓          │ 企业级     │
-│ Arthur AI    │ 商业       │ ✓          │ Agent 专注 │
-└──────────────┴────────────┴────────────┴────────────┘
-```
+| 工具 | 开源/商业 | OTel 支持 | 特色 |
+| --- | --- | --- | --- |
+| Langfuse | 开源 | ✓ | 最流行的开源 |
+| LangSmith | 商业 | 部分 | LangChain |
+| Arize Phoenix | 开源 | ✓ | ML + LLM |
+| Traceloop | 开源 | ✓ 原生 | OTel 原生 |
+| Datadog | 商业 | ✓ | 企业级 |
+| Arthur AI | 商业 | ✓ | Agent 专注 |
 
 ## 常见误区 / 面试追问
 

@@ -17,11 +17,19 @@ RAG 系统的评估需要从**检索质量**和**生成质量**两个维度同�
 
 一个完整的 RAG 系统可以拆解为两个阶段，评估也相应分为两个维度：
 
+```mermaid
+flowchart LR
+    Q["Query"] --> R["Retriever"] --> C["Contexts"] --> G["Generator"] --> A["Answer"]
+    R -.-> M1["检索质量评估<br/>Precision / Recall / MRR / NDCG"]
+    G -.-> M2["生成质量评估<br/>Faithfulness / Relevancy"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class Q,R,G proc
+    class C,A store
+    class M1,M2 decision
 ```
-Query → [Retriever] → Contexts → [Generator] → Answer
-           ↓                          ↓
-      检索质量评估               生成质量评估
-```
+*RAG 评估按流水线拆两半：Retriever 侧量找得准不准，Generator 侧量答得好不好，检索质量是生成质量的上界。*
 
 | 维度 | 核心问题 | 代表指标 |
 |------|---------|---------|
@@ -578,17 +586,18 @@ class DomainAccuracy(MetricWithLLM):
 
 #### 评估流水线架构
 
+```mermaid
+flowchart LR
+    D["评估数据集<br/>(Q/A/Context)"] --> P["RAG Pipeline<br/>(推理)"]
+    P --> E["RAGAS 评估<br/>(自动打分)"]
+    E --> V["结果仪表盘<br/>(可视化)"]
+    V -.->|"反馈优化循环"| D
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class P,E proc
+    class D,V store
 ```
-┌─────────────┐    ┌──────────────┐    ┌──────────────┐    ┌────────────┐
-│ 评估数据集    │───▶│ RAG Pipeline │───▶│ RAGAS 评估    │───▶│ 结果仪表盘  │
-│ (Q/A/Context)│    │ (推理)       │    │ (自动打分)    │    │ (可视化)    │
-└─────────────┘    └──────────────┘    └──────────────┘    └────────────┘
-       ▲                                      │
-       │                                      ▼
-       │                              ┌──────────────┐
-       └──────────────────────────────│ 反馈优化循环   │
-                                      └──────────────┘
-```
+*RAGAS 把评估做成闭环：数据集 → 推理 → 自动打分 → 仪表盘，结果反馈回数据集持续优化。*
 
 #### 最佳实践
 

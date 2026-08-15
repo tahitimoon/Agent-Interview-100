@@ -67,22 +67,24 @@ class SelfRAG:
 
 #### 工作流程
 
+```mermaid
+flowchart TD
+    Q["Query"] --> R["检索文档"]
+    R --> E{"检索评估器<br/>对每个文档打分"}
+    E -->|"相关"| A["直接使用"]
+    E -->|"模糊"| B["知识精炼 + Web 搜索"]
+    E -->|"不相关"| C["Web 搜索<br/>获取新文档"]
+    A --> G["生成最终回答"]
+    B --> G
+    C --> G
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class E decision
+    class Q,R,A,B,G proc
+    class C err
 ```
-Query → 检索文档
-         ↓
-    [检索评估器] ← 对每个文档打分
-         │
-    ┌────┼────────────┐
-    │    │             │
-  相关   模糊         不相关
-    │    │             │
-  直接   知识精炼 +     Web 搜索
-  使用   Web 搜索       获取新文档
-    │    │             │
-    └────┼────────────┘
-         ↓
-    生成最终回答
-```
+*CRAG 在检索与生成之间加评估器：相关直接用，模糊先精炼再补 Web，不相关整组换 Web 搜索兜底。*
 
 ```python
 class CorrectiveRAG:
@@ -127,17 +129,18 @@ class CorrectiveRAG:
 
 #### 工作流程
 
+```mermaid
+flowchart TD
+    Q["Query"] --> C{"查询复杂度分类器"}
+    C -->|"简单"| A["不检索<br/>LLM 直接答"]
+    C -->|"中等"| B["标准 RAG<br/>单次检索 + 生成"]
+    C -->|"复杂"| D["多跳检索<br/>+ Self-RAG 验证"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class C decision
+    class Q,A,B,D proc
 ```
-Query → [查询复杂度分类器]
-              │
-    ┌─────────┼─────────┐
-    │         │         │
-  简单       中等       复杂
-    │         │         │
-  不检索    标准 RAG   多跳检索
-  (LLM      (单次     + Self-RAG
-  直接答)   检索+生成)  + 验证)
-```
+*Adaptive RAG 用复杂度分类器前置路由：简单不检索，中等单次 RAG，复杂多跳检索加验证。*
 
 ```python
 class AdaptiveRAG:

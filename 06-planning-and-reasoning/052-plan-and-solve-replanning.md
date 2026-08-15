@@ -59,24 +59,20 @@ and solve the problem step by step.
 
 ### 三、基准测试结果
 
-```
 数学推理基准（text-davinci-003，PS 原论文 Table 4）：
-┌─────────────────┬──────────┬──────────┬──────────┐
-│ 方法            │ GSM8K    │ SVAMP    │ MultiArith│
-├─────────────────┼──────────┼──────────┼──────────┤
-│ Zero-shot       │ 17.7     │ 65.4     │ 22.7     │
-│ Zero-shot CoT   │ 56.4     │ 74.3     │ 78.7     │
-│ Plan-and-Solve  │ 58.2     │ 77.8     │ 87.2     │
-│ PS+             │ 59.3     │ 79.2     │ 91.8     │
-│ Few-shot CoT    │ 58.4     │ 79.4     │ 93.6     │
-└─────────────────┴──────────┴──────────┴──────────┘
+
+| 方法 | GSM8K | SVAMP | MultiArith |
+|------|-------|-------|------------|
+| Zero-shot | 17.7 | 65.4 | 22.7 |
+| Zero-shot CoT | 56.4 | 74.3 | 78.7 |
+| Plan-and-Solve | 58.2 | 77.8 | 87.2 |
+| PS+ | 59.3 | 79.2 | 91.8 |
+| Few-shot CoT | 58.4 | 79.4 | 93.6 |
 
 注意：
 - 数字以 Wang et al. 2023 PS Prompting 原论文 Table 4 为准（text-davinci-003 / Zero-shot CoT 对照）。
-- 不同复现/不同 base model 数字会有抖动，但 Few-shot CoT 在 MultiArith 上保持 ~93%，
-  PS+ 接近 92%，远高于早期勘误中常见的"83.8%"。
+- 不同复现/不同 base model 数字会有抖动，但 Few-shot CoT 在 MultiArith 上保持 ~93%，PS+ 接近 92%，远高于早期勘误中常见的"83.8%"。
 - PS+ 几乎追平 Few-shot CoT，但**不需要提供任何示例**！
-```
 
 ### 四、Plan-and-Execute Agent 架构
 
@@ -439,26 +435,24 @@ replanning_principles = {
 
 ### 十二、实际系统中的重规划架构
 
+```mermaid
+flowchart TD
+    P["Planner<br/>生成初始计划"] --> E["Executor<br/>逐步执行计划"]
+    E --> M["Monitor<br/>监控执行偏差"]
+    M --> Q{"检测到偏差?"}
+    Q -- "是" --> R["Replanner<br/>生成新计划"]
+    R -- "新计划回灌" --> E
+    Q -- "否" --> C{"全部步骤完成?"}
+    C -- "否" --> E
+    C -- "是" --> O["输出最终结果"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class E,O proc
+    class P,R agent
+    class M,Q,C decision
 ```
-┌──────────────┐
-│   Planner    │ ← 初始计划
-└──────┬───────┘
-       ▼
-┌──────────────┐     ┌──────────────┐
-│  Executor    │────▶│   Monitor    │
-│ (执行步骤)   │     │ (监控偏差)   │
-└──────┬───────┘     └──────┬───────┘
-       │                    │
-       ▼                    ▼
-  成功 → 继续          偏差检测 → 触发重规划
-                            │
-                    ┌───────▼────────┐
-                    │   Replanner    │
-                    │ (生成新计划)   │
-                    └───────┬────────┘
-                            │
-                    反馈到 Executor 继续执行
-```
+*Plan-and-Execute 闭环：Executor 被 Monitor 盯梢，偏差触发 Replanner 生成新计划回灌执行。*
 
 ### 适用场景总结
 

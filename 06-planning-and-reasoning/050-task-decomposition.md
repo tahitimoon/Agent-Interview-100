@@ -147,6 +147,21 @@ class ADaPT:
             return Failure(str(e))
 ```
 
+```mermaid
+flowchart TD
+    T["任务"] --> E["尝试直接执行"]
+    E --> Q{"成功?"}
+    Q -- "是" --> R["返回结果"]
+    Q -- "否" --> D["分解为子任务"]
+    D --> RC["递归求解<br/>（子任务走同一流程）"]
+    RC --> AG["聚合子结果"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class T,E,R,D,RC,AG proc
+    class Q decision
+```
+*ADaPT 按需分解：先尝试直接执行，失败才分解，子任务递归走同一流程。*
+
 **ADaPT 的优势：** 只在必要时分解，避免过度分解。在 ALFWorld 上提升 28.3%，WebShop 提升 27%，TextCraft 提升 33%。
 
 ### 子任务表示方式

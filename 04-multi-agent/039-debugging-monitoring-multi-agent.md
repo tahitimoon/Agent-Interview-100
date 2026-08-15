@@ -11,16 +11,26 @@
 
 ### 多 Agent 调试的独特挑战
 
+```mermaid
+flowchart TD
+    IN["Input"] --> A["Agent A"]
+    A --> T1["Tool 1"]
+    T1 --> B["Agent B"]
+    B --> T2["Tool 2"]
+    A --> C["Agent C"]
+    C -- "循环" --> A
+    A --> D["Agent D"]
+    C --> T3["Tool 3"]
+    T3 -- "失败" --> R["重试"]
+    R --> T3
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C,D agent
+    class IN,T1,T2,T3 proc
+    class R err
 ```
-单 Agent 调试：
-  Input → LLM → Output   （线性，容易追踪）
-
-多 Agent 调试：
-  Input → Agent A → Tool 1 → Agent B → Tool 2
-                ↘ Agent C → Agent A（循环）→ Agent D
-                      ↗ Tool 3 失败 → 重试
-  （非线性、并行、循环、失败分支——指数级复杂度）
-```
+*单 Agent 是链，多 Agent 是有环、有分流、还有失败重试的图——调试复杂度指数级上升。*
 
 | 挑战 | 说明 |
 |------|------|
@@ -32,23 +42,23 @@
 
 ### 核心方法：Trace 和 Span
 
-```python
-# Trace = 一次完整的用户请求的执行记录
-# Span = Trace 中的一个操作步骤
-
-"""
-Trace: "用户询问订单退款"
-├── Span: Triage Agent（120ms, 500 tokens）
-│   ├── Span: LLM 推理（80ms）
-│   └── Span: Handoff to Refund Agent（10ms）
-├── Span: Refund Agent（350ms, 1200 tokens）
-│   ├── Span: LLM 推理（100ms）
-│   ├── Span: Tool: get_order_status（150ms）→ 成功
-│   ├── Span: Tool: process_refund（80ms）→ 成功
-│   └── Span: LLM 生成回复（50ms）
-└── 总计：470ms, 1700 tokens, $0.012
-"""
+```mermaid
+flowchart TD
+    T["Trace：用户询问订单退款<br/>总计 470ms · 1700 tokens · $0.012"]
+    T --> S1["Span：Triage Agent<br/>120ms · 500 tokens"]
+    T --> S2["Span：Refund Agent<br/>350ms · 1200 tokens"]
+    S1 --> A1["LLM 推理（80ms）"]
+    S1 --> A2["Handoff（10ms）"]
+    S2 --> B1["LLM 推理（100ms）"]
+    S2 --> B2["Tool：get_order_status（150ms）→ 成功"]
+    S2 --> B3["Tool：process_refund（80ms）→ 成功"]
+    S2 --> B4["LLM 生成回复（50ms）"]
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class T store
+    class S1,S2,A1,A2,B1,B2,B3,B4 proc
 ```
+*Trace 记录一次完整请求，Span 嵌套成执行树，还原每个 Agent 每一步的耗时与 token。*
 
 ### 实现追踪
 

@@ -155,15 +155,13 @@ class DynamicFewShot:
 
 ### 性能对比数据（示意，请以最新公开评测为准）
 
-```
 情感分类（SST-2，示意值）：
-┌──────────────────┬──────────┬──────────┐
-│ 方法             │ GPT-3.5  │ GPT-4    │
-├──────────────────┼──────────┼──────────┤
-│ Zero-shot        │ ~88%     │ ~95%     │
-│ Few-shot (3)     │ ~93%     │ ~96%     │
-│ Few-shot (5)     │ ~94%     │ ~96%     │
-└──────────────────┴──────────┴──────────┘
+
+| 方法 | GPT-3.5 | GPT-4 |
+|------|---------|-------|
+| Zero-shot | ~88% | ~95% |
+| Few-shot (3) | ~93% | ~96% |
+| Few-shot (5) | ~94% | ~96% |
 
 观察：
 1. Few-shot 对弱模型帮助更大（+6pp vs +1pp）
@@ -171,41 +169,41 @@ class DynamicFewShot:
 3. 3 个示例就已获得大部分提升
 
 数学推理（GSM8K，示意值）：
-┌──────────────────┬──────────┐
-│ 方法             │ GPT-4    │
-├──────────────────┼──────────┤
-│ Zero-shot        │ ~80%     │
-│ Few-shot (8)     │ ~82%     │
-│ Zero-shot CoT    │ ~90%     │
-│ Few-shot CoT     │ ~92%     │
-└──────────────────┴──────────┘
 
-观察：CoT 的提升 > Few-shot 的提升
-对于推理任务，推理方式比示例数量更重要
+| 方法 | GPT-4 |
+|------|-------|
+| Zero-shot | ~80% |
+| Few-shot (8) | ~82% |
+| Zero-shot CoT | ~90% |
+| Few-shot CoT | ~92% |
+
+观察：CoT 的提升 > Few-shot 的提升，对于推理任务，推理方式比示例数量更重要
 
 说明：上述数字为不同公开报告整理后的趋势值（GPT-3.5/4 SST-2、GSM8K），
 具体数字会因评测脚本、解析方式、提示版本而有 ±2pp 抖动。
 建议在自己业务数据上用 lm-eval-harness / Inspect AI 现场跑，作为权威基准。
 原始引用可见 OpenAI GPT-4 Technical Report (2023)、PromptArena leaderboard、HELM。
-```
 
 ### 决策流程图
 
+```mermaid
+flowchart TD
+    T["任务到来"] --> Q1{"任务简单<br/>且模型够强?"}
+    Q1 -- "是" --> Z["Zero-shot"]
+    Q1 -- "否" --> Q2{"需要特定输出格式?<br/>或表现不稳定?"}
+    Q2 -- "是" --> F["Few-shot<br/>示例固定格式、稳定行为"]
+    Q2 -- "否" --> Q3{"需要复杂推理?"}
+    Q3 -- "是" --> C["Zero-shot CoT<br/>或 Few-shot CoT"]
+    Q3 -- "否" --> Q4{"Token 预算紧张?"}
+    Q4 -- "是" --> B["Zero-shot + 详细指令"]
+    Q4 -- "否" --> U["先试 Zero-shot<br/>不够再加示例"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class Z,F,C,B,U proc
+    class Q1,Q2,Q3,Q4 decision
 ```
-任务到来
-  │
-  ├── 任务简单+模型强？ ─── 是 → Zero-shot
-  │
-  ├── 需要特定输出格式？ ── 是 → Few-shot（确保格式一致）
-  │
-  ├── 模型表现不稳定？ ─── 是 → Few-shot（用示例稳定行为）
-  │
-  ├── 需要推理？ ────────── 是 → Zero-shot CoT 或 Few-shot CoT
-  │
-  ├── Token 预算紧张？ ─── 是 → Zero-shot + 详细指令
-  │
-  └── 不确定？ ──────────── 先试 Zero-shot，不够再加示例
-```
+
+*选型决策：任务简单模型强走 Zero-shot，要格式或稳定性走 Few-shot，要推理上 CoT，不确定先试 Zero-shot。*
 
 ## 常见误区 / 面试追问
 

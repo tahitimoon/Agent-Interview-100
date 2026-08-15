@@ -11,34 +11,44 @@
 
 ### 分层架构设计
 
+```mermaid
+flowchart TD
+    subgraph L1["应用层 Application"]
+        A["具体业务 Agent<br/>客服、代码助手等"]
+    end
+    subgraph L2["编排层 Orchestration"]
+        B["Agent Loop<br/>多 Agent 协调 / 工作流引擎"]
+    end
+    subgraph L3["核心层 Core"]
+        C["Port 接口定义<br/>数据模型 / 事件系统"]
+    end
+    subgraph L4["适配器层 Adapters"]
+        D["LLM Adapter"]
+        E["Tools Adapter"]
+        F["Storage Adapter"]
+    end
+    subgraph L5["中间件层 Middleware"]
+        G["Logging / Tracing<br/>Guardrails / Caching"]
+    end
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
+    L4 --- L5
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B proc
+    class C store
+    class D,E,F,G neutral
 ```
-可测试 Agent 框架的分层架构：
 
-┌─────────────────────────────────────────────┐
-│            应用层 (Application)              │
-│  具体的业务 Agent（客服、代码助手等）        │
-├─────────────────────────────────────────────┤
-│            编排层 (Orchestration)            │
-│  Agent Loop / 多 Agent 协调 / 工作流引擎    │
-├─────────────────────────────────────────────┤
-│            核心层 (Core)                     │
-│  接口定义 / 数据模型 / 事件系统             │
-├─────────────────────────────────────────────┤
-│            适配器层 (Adapters)               │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐      │
-│  │ LLM     │ │ Tools   │ │ Storage │      │
-│  │ Adapter │ │ Adapter │ │ Adapter │      │
-│  └─────────┘ └─────────┘ └─────────┘      │
-├─────────────────────────────────────────────┤
-│            中间件层 (Middleware)             │
-│  Logging / Tracing / Guardrails / Caching  │
-└─────────────────────────────────────────────┘
+*可测试性来自依赖方向：核心只认 Port 接口，LLM / 工具 / 存储全是可替换适配器——测试即换 Mock。*
 
 关键原则：
+
 - 依赖方向：外层依赖内层，内层不依赖外层
 - 核心层只定义接口（Protocol），不包含实现
 - 适配器可独立替换，不影响其他层
-```
 
 ### 核心接口定义（Port）
 

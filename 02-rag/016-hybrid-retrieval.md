@@ -24,20 +24,23 @@
 
 ### 混合检索的工作流程
 
+```mermaid
+flowchart TD
+    Q["用户查询"] --> A["BM25 关键词检索<br/>→ 列表 A（BM25 分数）"]
+    Q --> B["向量语义检索<br/>→ 列表 B（余弦相似度）"]
+    A --> R["RRF 融合<br/>只按排名，不比分数"]
+    B --> R
+    R --> U["统一排序列表"]
+    U --> X["Cross-Encoder 重排序<br/>（可选）"]
+    X --> T["最终 Top-K 结果"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B,R,X proc
+    class U,T store
+    class Q neutral
 ```
-用户查询
-    ├──→ [BM25 关键词检索] → 排序列表 A（按 BM25 分数排序）
-    │
-    └──→ [向量语义检索]   → 排序列表 B（按余弦相似度排序）
-                                    │
-                           [融合算法 (RRF)]
-                                    │
-                              统一排序列表
-                                    │
-                           [Cross-Encoder 重排序]（可选）
-                                    │
-                              最终 Top-K 结果
-```
+*混合检索并行跑 BM25 与向量两路，RRF 只按排名融合规避分数不可比，再经 Cross-Encoder 精排出 Top-K。*
 
 ### 分数不可比问题
 

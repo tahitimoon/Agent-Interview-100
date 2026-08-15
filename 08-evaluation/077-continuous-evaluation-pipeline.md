@@ -29,6 +29,24 @@
 
 ### 三阶段流水线架构
 
+```mermaid
+flowchart TD
+    A["变更触发<br/>Prompt / 模型 / 代码"] --> B["开发期：CI 回归<br/>不达标阻塞 PR 合并"]
+    B --> C["上线期：灰度发布<br/>5% → 25% → 50% → 100%"]
+    C --> D["运行期：在线抽样评估<br/>+ 漂移检测"]
+    D --> Q{"漂移 / 质量退化？"}
+    Q -- "是" --> E["熔断 / 自动回滚"]
+    Q -- "否" --> F["用户反馈回流<br/>Golden Dataset 更新"]
+    F --> B
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C,D,F proc
+    class Q decision
+    class E err
+```
+*持续评估是闭环而非关卡：三阶段各设门，用户反馈回流 Golden Dataset 让测试集活着。*
+
 ```python
 class ContinuousEvalPipeline:
     """持续评估流水线的三阶段架构"""

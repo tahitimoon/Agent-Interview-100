@@ -17,22 +17,18 @@ LLMOps 不替代 MLOps，而是在其基础上扩展，企业通常需要两者�
 
 #### 核心差异对比
 
-```
-┌──────────────────┬──────────────────┬──────────────────┐
-│ 维度             │ MLOps            │ LLMOps           │
-├──────────────────┼──────────────────┼──────────────────┤
-│ 核心模型         │ 自训练模型       │ 预训练 LLM（API）│
-│ 数据类型         │ 结构化数据       │ 非结构化文本     │
-│ 主要产物         │ 模型文件、特征   │ Prompt、向量索引 │
-│ 迭代周期         │ 周/月级          │ 小时/天级        │
-│ 主要成本         │ 训练（GPU 时间） │ 推理（API 调用） │
-│ 评估方式         │ AUC/F1/MSE       │ LLM Judge/人工   │
-│ 版本管理         │ 模型+数据版本    │ Prompt+配置版本  │
-│ 可观测性         │ 模型漂移         │ Prompt 漂移+Trace│
-│ 部署模式         │ 模型服务器       │ API Gateway      │
-│ 安全关注         │ 数据隐私         │ Prompt Injection │
-└──────────────────┴──────────────────┴──────────────────┘
-```
+| 维度 | MLOps | LLMOps |
+| --- | --- | --- |
+| 核心模型 | 自训练模型 | 预训练 LLM（API） |
+| 数据类型 | 结构化数据 | 非结构化文本 |
+| 主要产物 | 模型文件、特征 | Prompt、向量索引 |
+| 迭代周期 | 周/月级 | 小时/天级 |
+| 主要成本 | 训练（GPU 时间） | 推理（API 调用） |
+| 评估方式 | AUC/F1/MSE | LLM Judge/人工 |
+| 版本管理 | 模型+数据版本 | Prompt+配置版本 |
+| 可观测性 | 模型漂移 | Prompt 漂移+Trace |
+| 部署模式 | 模型服务器 | API Gateway |
+| 安全关注 | 数据隐私 | Prompt Injection |
 
 #### LLMOps 的核心组件
 
@@ -139,27 +135,38 @@ class LLMOpsWorkflow:
 
 #### 五层架构全景
 
+```mermaid
+flowchart TD
+    subgraph L1["接入层"]
+        A["API Gateway / Load Balancer<br/>认证 · 限流 · 路由 · 流式响应"]
+    end
+    subgraph L2["Agent 编排层"]
+        B["Agent Runtime（LangGraph / 自研）<br/>推理循环 · 工具选择 · 状态检查点"]
+    end
+    subgraph L3["模型网关层"]
+        C["LLM Gateway（LiteLLM / Portkey）<br/>模型路由 · 故障转移 · 缓存 · 成本追踪"]
+    end
+    subgraph L4["数据与工具层"]
+        D1["向量数据库<br/>(RAG)"]
+        D2["工具服务<br/>(MCP)"]
+        D3["状态存储<br/>(Redis/PG)"]
+        D4["安全护栏<br/>(Guardrails)"]
+    end
+    subgraph L5["可观测性层"]
+        E["Traces(Langfuse)<br/>Metrics(Prometheus) + Alerts"]
+    end
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
+    L4 --- L5
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B,C proc
+    class D1,D2,D3,D4 store
+    class E neutral
 ```
-┌──────────────────────────────────────────────────────┐
-│                    接入层                             │
-│  API Gateway / Load Balancer / WebSocket             │
-│  认证 → 限流 → 路由 → 流式响应                     │
-├──────────────────────────────────────────────────────┤
-│                Agent 编排层                           │
-│  Agent Runtime（LangGraph / 自研框架）               │
-│  推理循环 → 工具选择 → 状态管理 → 检查点            │
-├──────────────────────────────────────────────────────┤
-│               模型网关层                              │
-│  LLM Gateway（LiteLLM / Portkey）                    │
-│  模型路由 → 故障转移 → 缓存 → 成本追踪             │
-├──────────┬───────────┬───────────┬───────────────────┤
-│ 向量数据库│ 工具服务  │ 状态存储  │ 安全护栏         │
-│ (RAG)    │ (MCP)     │ (Redis/PG)│ (Guardrails)     │
-├──────────┴───────────┴───────────┴───────────────────┤
-│                 可观测性层                            │
-│  Traces(Langfuse) + Metrics(Prometheus) + Alerts     │
-└──────────────────────────────────────────────────────┘
-```
+*生产 Agent 是五层堆叠：接入、编排、模型网关、数据工具、观测——LLM 调用必须过网关层。*
 
 #### 各层详解
 

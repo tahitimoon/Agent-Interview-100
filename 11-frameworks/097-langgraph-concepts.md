@@ -11,37 +11,25 @@ LangGraph 是 LangChain 生态中专门用于构建**有状态、可恢复（dur
 
 ### 核心架构图
 
+```mermaid
+flowchart TD
+    S["START"] -->|"普通边"| L["llm 节点<br/>Python 函数，读写 State"]
+    L --> Q{"条件边<br/>should_continue:<br/>有 tool_calls？"}
+    Q -- "是" --> T["tools 节点<br/>执行工具，结果写回 State"]
+    T -->|"普通边"| L
+    Q -- "否" --> E["END"]
+    L -. "读写" .- ST["State 共享记忆<br/>messages 经 Reducer 追加合并"]
+    T -. "写回" .- ST
+    L -. "每个超步骤存档" .- CK["Checkpointer 持久化<br/>interrupt() 暂停 / 恢复 / 时间旅行"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class L agent
+    class Q decision
+    class ST,CK store
 ```
-LangGraph 核心概念：
 
-┌─────────────────────────────────────────┐
-│              StateGraph                  │
-│                                          │
-│  State (共享状态 - TypedDict)            │
-│  ┌─────────────────────────────────┐    │
-│  │ messages: list[BaseMessage]     │    │
-│  │ current_step: str               │    │
-│  │ tool_results: dict              │    │
-│  └─────────────────────────────────┘    │
-│                                          │
-│  Nodes (节点 - Python 函数)              │
-│  ┌──────┐    ┌──────┐    ┌──────┐      │
-│  │ plan │───→│ act  │───→│ check│      │
-│  └──────┘    └──────┘    └──┬───┘      │
-│                              │          │
-│  Edges (边 - 路由逻辑)       ▼          │
-│              ┌──────────────────┐       │
-│              │ 条件边：         │       │
-│              │ done? → END      │       │
-│              │ retry? → act     │       │
-│              └──────────────────┘       │
-│                                          │
-│  Checkpointer (持久化)                   │
-│  ├── MemorySaver (开发)                  │
-│  ├── PostgresSaver (生产)                │
-│  └── 支持 interrupt() + resume           │
-└─────────────────────────────────────────┘
-```
+*LangGraph 把 Agent 建成图：节点读写共享 State，条件边决定循环还是终止，Checkpointer 让图可暂停、可恢复。*
 
 ### State：图的共享记忆
 

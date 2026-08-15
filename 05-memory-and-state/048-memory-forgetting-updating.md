@@ -119,6 +119,25 @@ ttl_config = TTLConfig(
 
 #### 1. 冲突检测与覆盖
 
+```mermaid
+flowchart TD
+    A["新事实"] --> B["检索相似记忆<br/>（阈值 ~0.85）"]
+    B --> C{"有相似记忆？"}
+    C -- "无" --> S["直接存储"]
+    C -- "有" --> D{"LLM 判四态"}
+    D -- "UPDATE / CONTRADICT" --> U["旧记忆失效<br/>存入新事实"]
+    D -- "SUPPLEMENT" --> P["新旧共存"]
+    D -- "DUPLICATE" --> N["NOOP，忽略"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class A,B proc
+    class C,D decision
+    class S,U,P,N store
+```
+
+*新事实先检索相似记忆：无相似直接存储；有相似由 LLM 判四态——更新/矛盾则失效旧存新，补充则共存，重复则 NOOP。*
+
 ```python
 class ConflictAwareUpdater:
     """检测新旧信息冲突并智能更新"""

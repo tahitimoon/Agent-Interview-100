@@ -21,19 +21,26 @@ Bi-Encoder 将查询和文档独立编码为向量，速度快但精度有限，
 
 ### Bi-Encoder vs Cross-Encoder
 
+```mermaid
+flowchart TD
+    subgraph bi["Bi-Encoder（独立编码，文档向量可预计算缓存）"]
+        Q1["Query"] --> E1["Encoder"] --> V1["q_vector"]
+        D1["Doc"] --> E2["Encoder"] --> V2["d_vector"]
+        V1 --> S1["余弦相似度 → score"]
+        V2 --> S1
+    end
+    subgraph ce["Cross-Encoder（联合编码，每对 query-doc 都需完整推理）"]
+        P["Query + Doc 拼接"] --> T1["Transformer"] --> S2["score (0~1)"]
+    end
+    bi --- ce
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class E1,E2,T1 proc
+    class V1,V2,S1,S2 store
+    class Q1,D1,P neutral
 ```
-Bi-Encoder（独立编码）:
-  Query  → [Encoder] → q_vector ─┐
-                                  ├── cosine_similarity → score
-  Doc    → [Encoder] → d_vector ─┘
-
-  文档向量可以预计算并缓存
-
-Cross-Encoder（联合编码）:
-  [Query + Doc] → [Transformer] → score (0~1)
-
-  每对 query-doc 都需要完整的推理
-```
+*Bi-Encoder 独立编码、向量可预计算，故快而粗；Cross-Encoder 逐对联合编码、完整推理，故慢而精——这是两阶段检索的分工依据。*
 
 | 维度 | Bi-Encoder | Cross-Encoder |
 |------|-----------|---------------|

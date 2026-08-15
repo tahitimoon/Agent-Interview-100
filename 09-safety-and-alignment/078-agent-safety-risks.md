@@ -40,6 +40,22 @@ LLM Agent 安全风险分类：
 
 ### "致命三角"（Lethal Trifecta）
 
+```mermaid
+flowchart LR
+    A["攻击者"] --> B["不受信内容<br/>网页 / 邮件 / 检索文档"]
+    B -- "注入被当作指令" --> C["Agent<br/>无法区分指令与数据"]
+    D["敏感数据<br/>用户数据 / 内部文档"] --> C
+    C -- "被诱导外发" --> E["外部通信<br/>邮件 / API / 写库"]
+    E --> F["数据泄露"]
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class A,B,E,F err
+    class C agent
+    class D store
+```
+*致命三角：不受信内容一旦被当作指令，Agent 正接触的敏感数据就会从外部通信口送出去。*
+
 ```python
 # Simon Willison 提出的 Agent 安全核心框架
 # 原文：https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/

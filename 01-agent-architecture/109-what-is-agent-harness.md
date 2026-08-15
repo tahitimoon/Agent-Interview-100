@@ -20,26 +20,31 @@ Agent Harness 是 2025-2026 年新晋的行业术语，指**"模型之外的一�
 
 LangChain 官方博文（2025-10）首次系统化提出 Agent 软件栈的三层分类，迅速成为 2026 业界共识：
 
+```mermaid
+flowchart TD
+    subgraph HARNESS["🔧 Harness — 装配好的车"]
+        H["Claude Code · Codex CLI · Cline · Devin<br/>opinionated defaults：prompts / tools / context / sandbox<br/>「拿来就能跑的代码 Agent」"]
+    end
+    subgraph RUNTIME["⚙️ Runtime — 保证跑得稳"]
+        R["LangGraph · Temporal · Inngest<br/>durable execution / streaming / HITL / 跨线程状态<br/>「保证 Agent 不丢状态」"]
+    end
+    subgraph FRAMEWORK["🧱 Framework — 造 Agent 的积木"]
+        F["LangChain · CrewAI · OpenAI Agents SDK<br/>abstraction primitives：Agent / Tool / Chain / Handoff<br/>「拼装 Agent 的原语」"]
+    end
+    LLM["🧠 LLM — Claude · GPT · Gemini"]
+
+    HARNESS --- RUNTIME --- FRAMEWORK --- LLM
+
+    classDef harness fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef runtime fill:#fff8e1,stroke:#ef6c00,color:#e65100
+    classDef framework fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef llm fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class H harness
+    class R runtime
+    class F framework
+    class LLM llm
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ Harness (Claude Code / Codex CLI / Cline / Devin)            │
-│ ──────────────────────────────────────────────────────────── │
-│ Opinionated defaults: prompts / tools / context / sandbox    │
-│ "拿来就能跑的代码 Agent"                                       │
-├──────────────────────────────────────────────────────────────┤
-│ Runtime (LangGraph / Temporal / Inngest)                     │
-│ ──────────────────────────────────────────────────────────── │
-│ Durable execution / streaming / HITL / 跨线程状态             │
-│ "保证 Agent 不丢状态"                                          │
-├──────────────────────────────────────────────────────────────┤
-│ Framework (LangChain / CrewAI / OpenAI Agents SDK)           │
-│ ──────────────────────────────────────────────────────────── │
-│ Abstraction primitives / Agent / Tool / Chain / Handoff      │
-│ "造 Agent 的积木"                                             │
-├──────────────────────────────────────────────────────────────┤
-│ LLM (Claude / GPT / Gemini)                                  │
-└──────────────────────────────────────────────────────────────┘
-```
+*三层抽象自下而上：LLM → Framework（积木）→ Runtime（持久化执行）→ Harness（装配好的车）。*
 
 **一句话区分**：
 - Framework 教你"如何拼装 Agent"
@@ -98,40 +103,30 @@ Harness 厂商把 trace 数据用来 fine-tune 自家模型（Claude Code 之于
 
 ### 四、Framework vs Harness 的可视化对照
 
-```
-Framework（LangChain/CrewAI/Agents SDK）        Harness（Claude Code/Codex)
-──────────────────────────────────────────      ─────────────────────────────────
-- 给 abstraction primitives                     - 给 opinionated runtime
-- 你自己写 loop / memory / hook / sandbox       - 你只 customize 4 件事:
-- 学习曲线 = "如何用框架 API"                     · system prompt
-- 适合 custom 工作流编排                          · tools
-- 模型无关（理论上）                              · context (CLAUDE.md/AGENTS.md)
-- 输出 = SDK 代码                                 · subagents
-                                                - 学习曲线 = "如何调 harness"
-                                                - 适合通用 Agent 任务
-                                                - 模型耦合（post-training coupling）
-                                                - 输出 = CLI / IDE 扩展
-```
+| 维度 | Framework（LangChain / CrewAI / Agents SDK） | Harness（Claude Code / Codex / Cline） |
+|------|---------------------------------------------|----------------------------------------|
+| 给什么 | abstraction primitives | opinionated runtime |
+| 你要做的 | 自己写 loop / memory / hook / sandbox | 只 customize 4 件事：system prompt、tools、context（CLAUDE.md / AGENTS.md）、subagents |
+| 学习曲线 | "如何用框架 API" | "如何调 harness" |
+| 适合 | custom 工作流编排 | 通用 Agent 任务 |
+| 模型耦合 | 模型无关（理论上） | 模型耦合（post-training coupling） |
+| 输出 | SDK 代码 | CLI / IDE 扩展 |
 
 ### 五、何时该用 Framework、Runtime、Harness？
 
+```mermaid
+flowchart TD
+    Q{"要造什么?"}
+    Q -- "业务系统加点 LLM 能力<br/>chatbot / 表单解析 / 路由" --> A["直接调 API 或用 Framework<br/>LangChain Expression Language"]
+    Q -- "特定领域的<br/>custom Agent" --> B["Framework + Runtime<br/>LangGraph 给 durable execution"]
+    Q -- "代码 Agent /<br/>通用电脑 Agent" --> C["套 Harness：Claude Code / Codex / Cline<br/>按需扩展 Skill / Hook / Subagent"]
+    Q -- "下一代 Harness<br/>产品级" --> D["自研<br/>先回答 opinionated default 与差异化在哪"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q decision
+    class A,B,C,D proc
 ```
-我要解决什么问题？
-│
-├── 想给业务系统加点 LLM 能力（chatbot / 表单解析 / 路由）
-│   └── 直接调 API 或用 Framework（LangChain Expression Language）
-│
-├── 想构建一个特定领域的 custom Agent（金融 / 医疗 / 自家产品）
-│   └── Framework + Runtime（LangGraph 给 durable execution）
-│
-├── 想做"代码 Agent"或"通用电脑 Agent"
-│   └── 套 Harness（Claude Code / Codex / Cline），按需扩展
-│       Skill / Hook / Subagent，不要自己造轮子
-│
-└── 想做下一代 Harness（Cursor 那种产品级）
-    └── 自研，但要回答：你的"opinionated default"是什么？
-        差异化在哪？（参考 Cline SDK 2026-05 把 runtime 从 IDE 剥离的范式）
-```
+*按要造的东西选层：加 LLM 能力用 Framework，领域 Agent 加 Runtime，代码 Agent 直接套 Harness，做下一代 Harness 才自研。*
 
 ### 六、代码示例：感受 Harness 与 Framework 的"opinionated"差异
 

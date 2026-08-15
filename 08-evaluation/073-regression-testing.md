@@ -33,6 +33,23 @@ LLM/Agent 回归测试是在每次变更（Prompt 修改、模型升级、代码
 
 ### 回归测试框架
 
+```mermaid
+flowchart TD
+    A["变更：Prompt / 模型 /<br/>代码 / RAG 索引"] --> B["CI 触发"]
+    B --> C["Golden Dataset 回归"]
+    C --> D["与基线对比"]
+    D --> Q{"退化超阈值？"}
+    Q -- "是" --> E["阻断合并"]
+    Q -- "否" --> F["放行部署"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C,D,F proc
+    class Q decision
+    class E err
+```
+*Prompt 和代码一样过 CI：变更触发 Golden Dataset 基线对比，退化超阈值就阻断合并。*
+
 ```python
 class LLMRegressionTester:
     """LLM/Agent 回归测试框架"""

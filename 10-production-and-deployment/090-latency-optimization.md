@@ -104,6 +104,22 @@ async def chat_stream(request: ChatRequest):
 
 ### 多层缓存策略
 
+```mermaid
+flowchart TD
+    A["查询"] --> B{"语义缓存命中?<br/>相似度 > 0.95"}
+    B -- "是" --> R["返回结果<br/>毫秒级"]
+    B -- "否" --> C{"规划模板命中?"}
+    C -- "是" --> D["复用规划执行<br/>跳过规划阶段"]
+    C -- "否" --> E["LLM 推理<br/>KV Cache + Prompt Cache 内置"]
+    D --> R
+    E --> R
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class A,D,E,R proc
+    class B,C decision
+```
+*缓存查询逐层兜底：语义缓存毫秒级、规划缓存跳过规划，都 miss 才落到 KV/Prompt 缓存加持的 LLM。*
+
 ```python
 class MultiLayerCache:
     """Agent 系统的多层缓存架构"""

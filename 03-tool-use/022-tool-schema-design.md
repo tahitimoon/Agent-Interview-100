@@ -215,17 +215,27 @@ def validate_and_execute(tool_name: str, llm_args: dict):
 
 Function Calling 是 LLM 调用工具的底层机制，但裸用会面临工程问题：工具定义散落、无法复用、缺乏统一生命周期管理。**Skills 层**在 Function Calling 之上提供封装，解决"如何让工具调用可控、可复用、可维护"的问题。
 
+```mermaid
+flowchart TD
+    subgraph SK["Skills 封装层 —— 让工具调用可控、可复用、可维护"]
+        A["工具发现 · 参数校验 · 状态管理<br/>错误处理 · 权限控制 · 日志审计"]
+    end
+    subgraph FC["Function Calling 机制 —— 模型级能力"]
+        B["LLM 生成结构化<br/>工具调用请求"]
+    end
+    subgraph TL["底层工具 —— 实际执行"]
+        C["API / DB / Code"]
+    end
+    SK --- FC
+    FC --- TL
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A agent
+    class B proc
+    class C neutral
 ```
-Skills 层提供的核心能力：
-┌─────────────────────────────────────┐
-│  工具发现 │ 参数校验 │ 状态管理     │
-│  错误处理 │ 权限控制 │ 日志审计     │
-└─────────────────────────────────────┘
-          ↕  Function Calling
-┌─────────────────────────────────────┐
-│  底层工具 (API / DB / Code)          │
-└─────────────────────────────────────┘
-```
+*Skill 是 Function Calling 之上的工程封装层——FC 是 syscall，Skill 是 SDK。*
 
 #### 封装判断标准
 
@@ -255,13 +265,12 @@ Skills 层提供的核心能力：
 
 工具过多会降低 LLM 的选择准确率：
 
-```
-工具数量     LLM 选对概率     平均选择延迟
-1-5         > 95%            +0.2s
-6-10        85-95%           +0.5s
-11-20       70-85%           +1.0s
-20+         < 70%            +1.5s+
-```
+| 工具数量 | LLM 选对概率 | 平均选择延迟 |
+|---------|-------------|--------------|
+| 1-5 | > 95% | +0.2s |
+| 6-10 | 85-95% | +0.5s |
+| 11-20 | 70-85% | +1.0s |
+| 20+ | < 70% | +1.5s+ |
 
 解决方案——**分类路由**：先让 LLM 选类别，再暴露该类别的工具。
 

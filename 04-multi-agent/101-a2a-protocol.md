@@ -29,19 +29,13 @@ Google 联合 Atlassian、Salesforce、SAP 等 50+ 企业伙伴推出 A2A，目�
 
 ### 协议层次架构
 
-```
-┌───────────┬──────────────────────────────────────┐
-│  应用层    │  Agent Card / Task / Message / Artifact │
-├───────────┼──────────────────────────────────────┤
-│  消息格式  │  JSON-RPC 2.0                         │
-├───────────┼──────────────────────────────────────┤
-│  实时推送  │  SSE（Server-Sent Events）             │
-├───────────┼──────────────────────────────────────┤
-│  传输层    │  HTTP / HTTPS                         │
-├───────────┼──────────────────────────────────────┤
-│  安全层    │  OAuth 2.0 / API Key / JWT            │
-└───────────┴──────────────────────────────────────┘
-```
+| 层 | 技术/协议 |
+|----|----------|
+| 应用层 | Agent Card / Task / Message / Artifact |
+| 消息格式 | JSON-RPC 2.0 |
+| 实时推送 | SSE（Server-Sent Events） |
+| 传输层 | HTTP / HTTPS |
+| 安全层 | OAuth 2.0 / API Key / JWT |
 
 ### 核心概念详解
 
@@ -53,20 +47,25 @@ Google 联合 Atlassian、Salesforce、SAP 等 50+ 企业伙伴推出 A2A，目�
 
 Task 是协议核心工作单元，有明确的状态机：
 
+```mermaid
+stateDiagram-v2
+    state "submitted（已提交）" as sub
+    state "working（执行中）" as work
+    state "input-required（需要输入）" as ir
+    state "completed（已完成）" as done
+    state "failed（失败）" as fail
+    [*] --> sub
+    sub --> work: 开始执行
+    sub --> fail: 出错
+    work --> done: 成功
+    work --> fail: 出错
+    work --> ir: 缺少必要输入
+    ir --> work: 补充输入后恢复
+    ir --> fail: 出错
+    done --> [*]
+    fail --> [*]
 ```
-  ┌───────────┐    ┌───────────┐    ┌───────────┐
-  │ submitted │───►│  working  │───►│ completed │
-  │  (已提交)  │    │  (执行中)  │    │  (已完成)  │
-  └───────────┘    └─────┬─────┘    └───────────┘
-                         │
-                         ▼
-                  ┌──────────────┐    ┌───────────┐
-                  │input-required│───►│  failed   │
-                  │ (需要输入)    │    │  (失败)   │
-                  └──────┬───────┘    └───────────┘
-                         │ 补充输入后
-                         └──────────► working ──► completed / failed
-```
+*Task 是有状态的工作单元：可暂停等待输入（input-required）再恢复，而非单次无状态调用。*
 
 #### 3. Message 和 Artifact
 
@@ -74,21 +73,19 @@ Task 是协议核心工作单元，有明确的状态机：
 
 ### A2A 与 MCP 的定位差异
 
+```mermaid
+flowchart TD
+    A["Agent A<br/>Client Agent"] <-- A2A 横向协作 --> B["Agent B<br/>Server Agent"]
+    A -- "MCP 纵向" --> T1["数据库"]
+    A -- "MCP 纵向" --> T2["API 工具"]
+    B -- "MCP 纵向" --> T3["搜索引擎"]
+    B -- "MCP 纵向" --> T4["代码执行"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B agent
+    class T1,T2,T3,T4 neutral
 ```
-┌──────────────────────────────────────────────────────┐
-│   Agent A                          Agent B           │
-│  ┌─────────┐      A2A 协议       ┌─────────┐        │
-│  │ Client  │◄═══════════════════►│ Server  │        │
-│  │ Agent   │  Agent↔Agent 横向    │ Agent   │        │
-│  └────┬────┘                     └────┬────┘        │
-│       │ MCP                           │ MCP          │
-│       ▼                               ▼             │
-│  ┌─────────┐                     ┌─────────┐        │
-│  │ 数据库   │                     │ 搜索引擎 │        │
-│  │ API 工具 │                     │ 代码执行 │        │
-│  └─────────┘                     └─────────┘        │
-└──────────────────────────────────────────────────────┘
-```
+*MCP 纵向连工具，A2A 横向连 Agent——双层标准互补而非替代。*
 
 | 维度 | A2A | MCP |
 |------|-----|-----|
@@ -112,6 +109,8 @@ A2A 自 2025 年捐赠给 Linux Foundation 后，2026 年的核心进展集中�
 | **Google Cloud 部署链路** | ADK 构建的 A2A Agent 可直接部署到 Vertex AI Agent Engine，获得托管运行环境，企业可直接接入云上扩缩容与可观测能力 |
 | **官方 Codelab** | Google 发布 Purchasing Concierge 等 Codelab，端到端演示多个 Agent 通过 A2A 协作完成购物代办场景 |
 | **A2A + MCP 双层标准** | 行业共识收敛为：**MCP 负责「Agent↔工具」纵向能力扩展，A2A 负责「Agent↔Agent」横向协作**——一个生产级 Agent 系统往往同时实现两套协议 |
+
+> 架构全景见上文「A2A 与 MCP 的定位差异」配图。
 
 ```
 ┌──────────────────────────────────────────────────────────┐

@@ -200,19 +200,23 @@ final = app.invoke(
 
 ### 决策框架
 
+```mermaid
+flowchart TD
+    S["新操作"] --> Q1{"质量还是速度优先？"}
+    Q1 -- "质量优先" --> Q2{"操作可逆？"}
+    Q2 -- "不可逆" --> M["必须 HITL"]
+    Q2 -- "可逆" --> O["可选 HITL"]
+    Q1 -- "速度优先" --> Q3{"低风险操作？"}
+    Q3 -- "是" --> A2["完全自动化"]
+    Q3 -- "否" --> H["加 HITL"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q1,Q2,Q3,M,O,H decision
+    class S,A2 proc
 ```
-如何决定是否需要 HITL？
+*要不要人审，两次分叉就定：先问质量还是速度，再问可逆性与风险。*
 
-                    质量重要 vs 速度重要？
-                    /                    \
-              质量优先                 速度优先
-              /                          \
-    操作可逆？                    低风险操作？
-    /        \                    /        \
-  不可逆    可逆               是          否
-   ↓         ↓                 ↓           ↓
- 必须HITL  可选HITL       全自动化     加HITL
-
+```
 推荐的渐进策略：
 Phase 1: 所有操作都需人工确认（最安全）
 Phase 2: 低风险操作自动化，高风险保留人工
@@ -228,26 +232,13 @@ Phase 4: 只在异常/边界情况升级人工
 
 ### HITL 工具生态
 
-```
-┌──────────────────┬──────────────────────────────────┐
-│ 工具             │ HITL 能力                        │
-├──────────────────┼──────────────────────────────────┤
-│ LangGraph        │ interrupt() 暂停图执行           │
-│                  │ 完全控制路由和恢复               │
-├──────────────────┼──────────────────────────────────┤
-│ HumanLayer       │ 框架无关的 HITL API/SDK          │
-│                  │ Slack/Email/UI 多渠道审批        │
-├──────────────────┼──────────────────────────────────┤
-│ Amazon Bedrock   │ 内置 user confirmation 功能      │
-│ Agents           │ 可配置哪些工具需要确认           │
-├──────────────────┼──────────────────────────────────┤
-│ CrewAI           │ human_input=True 参数            │
-│                  │ Agent 级别的人工输入开关          │
-├──────────────────┼──────────────────────────────────┤
-│ Permit.io        │ 基于 RBAC/ABAC 的细粒度审批     │
-│                  │ 与 Agent 框架集成的权限管理      │
-└──────────────────┴──────────────────────────────────┘
-```
+| 工具 | HITL 能力 |
+| --- | --- |
+| LangGraph | interrupt() 暂停图执行<br>完全控制路由和恢复 |
+| HumanLayer | 框架无关的 HITL API/SDK<br>Slack/Email/UI 多渠道审批 |
+| Amazon Bedrock Agents | 内置 user confirmation 功能<br>可配置哪些工具需要确认 |
+| CrewAI | human_input=True 参数<br>Agent 级别的人工输入开关 |
+| Permit.io | 基于 RBAC/ABAC 的细粒度审批<br>与 Agent 框架集成的权限管理 |
 
 ## 常见误区 / 面试追问
 

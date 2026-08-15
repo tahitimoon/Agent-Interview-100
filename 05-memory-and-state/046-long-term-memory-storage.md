@@ -100,20 +100,26 @@ class StructuredMemory:
 
 #### 知识图谱记忆架构
 
+```mermaid
+flowchart TD
+    I["用户交互"] --> L["LLM 提取<br/>实体与关系"]
+    L --> K["知识图谱<br/>节点 / 边 / 双时间线"]
+    K --> T1["图遍历"]
+    K --> T2["语义向量"]
+    K --> T3["BM25 关键词"]
+    T1 --> F["RRF 融合排序"]
+    T2 --> F
+    T3 --> F
+    F --> C["注入 LLM 上下文"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class L,C agent
+    class K store
+    class T1,T2,T3,F proc
 ```
-用户交互 → LLM 提取实体和关系 → 知识图谱
-                                    │
-                              ┌─────┼─────┐
-                              │     │     │
-                           节点   边    时间线
-                          (实体) (关系) (有效期)
-                              │     │     │
-                              └─────┼─────┘
-                                    │
-                          查询时：图遍历 + 语义搜索 + BM25
-                                    │
-                              检索结果 → 注入 LLM 上下文
-```
+
+*图谱记忆：交互抽取入图（节点/边/双时间线），查询走图遍历 + 语义 + BM25 三路合流回灌上下文。*
 
 #### 基础三元组接口
 
@@ -426,24 +432,21 @@ Letta：  core memory 常驻 → 需要时 Agent 主动调 archival_memory_searc
 
 #### 对接生产级记忆系统的选型建议
 
+```mermaid
+flowchart TD
+    Q{"你的记忆需求是什么？"}
+    Q -- "偏好/事实召回" --> M1["Mem0（最快落地）<br/>或 LangMem（已在 LangGraph 栈内）"]
+    Q -- "关系推理 + 时间推理" --> M2["Zep / Graphiti<br/>双时间线 + 图遍历是刚需"]
+    Q -- "Agent 自主决定记什么" --> M3["Letta<br/>self-editing memory 范式"]
+    Q -- "多 Agent 共享记忆" --> M4["Zep（图天然共享）<br/>或自建带权限的记忆服务"]
+    Q -- "大规模生产（QPS/成本/合规严苛）" --> M5["自研混合架构<br/>+ 框架做原型验证"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class Q decision
+    class M1,M2,M3,M4,M5 neutral
 ```
-你的记忆需求是什么？
-│
-├── 只需"记住用户说过什么"（偏好/事实召回）
-│   └── Mem0（最快落地）或 LangMem（已在 LangGraph 栈内）
-│
-├── 需要"关系推理 + 时间推理"（A 的上级是谁？现在 vs 上周？）
-│   └── Zep / Graphiti（双时间线 + 图遍历是刚需）
-│
-├── 需要"Agent 自主决定记什么"（长程自治 Agent）
-│   └── Letta（self-editing memory 范式）
-│
-├── 需要"多 Agent 共享同一份记忆"
-│   └── Zep（图天然共享）或自建带权限的记忆服务
-│
-└── 大规模生产（QPS / 成本 / 合规严苛）
-    └── 自研混合架构（参考上文 HybridMemory）+ 框架做原型验证
-```
+
+*记忆框架按需求五路选型：召回选 Mem0，关系/时间推理选 Zep，Agent 自治选 Letta，共享选 Zep，严苛生产自研。*
 
 > 🔗 **与本文存储介质选型的关系**：本节的框架，本质是把上文"向量 + 结构化 + 图谱"的混合架构**产品化封装**——Mem0 = 向量 + 图；Zep = 图谱 + 混合检索；LangMem = 可插拔后端；Letta = 块存储 + 向量。选框架 = 选一套预先组装好的存储介质组合 + 抽取/检索策略。理解了上文的介质取舍（参见 [记忆类型总览 #040](040-memory-types.md)），框架选型就是"买现成组装车还是自己攒"的问题。
 

@@ -93,6 +93,35 @@ response.content = [
 
 ### 混合模式（Hybrid）—— 生产最佳实践
 
+```mermaid
+flowchart TD
+    A["用户请求<br/>生成竞品分析报告"]
+    subgraph PAR["阶段 1：并行扇出（独立数据收集）"]
+        B["research<br/>Product A"]
+        C["research<br/>Product B"]
+        D["research<br/>Product C"]
+    end
+    A --> B
+    A --> C
+    A --> D
+    subgraph SEQ["阶段 2：顺序处理（依赖前序结果）"]
+        E["generate_comparison"]
+        F["format_report"]
+    end
+    B --> E
+    C --> E
+    D --> E
+    E --> F
+    F --> G["最终报告"]
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class A neutral
+    class B,C,D store
+    class E,F,G proc
+```
+*混合模式：独立的数据收集并行扇出，依赖前序结果的处理顺序扇入，延迟从 N×T 降为 max(T)+串行段。*
+
 ```python
 # 混合模式示例："为产品 A、B、C 生成竞品分析报告"
 

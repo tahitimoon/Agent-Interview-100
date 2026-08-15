@@ -13,38 +13,34 @@
 
 Prompt Engineering 聚焦于"怎么问"，Context Engineering 聚焦于"用什么信息去问"。这是一个维度的跃升：
 
+```mermaid
+flowchart TD
+    subgraph PE["Prompt Engineering —— 怎么问：措辞、格式化一条指令"]
+        PE1["System Prompt 写作技巧<br/>Few-shot 示例 / CoT、ReAct 格式"]
+    end
+    subgraph CE["Context Engineering —— 用什么信息问：构建决策上下文"]
+        SP["System Prompt"]
+        TR["Tool Results"]
+        HI["对话历史"]
+        EK["External Knowledge<br/>RAG / API"]
+        B["动态上下文组装器<br/>(Context Builder)"]
+        L["LLM 调用入口"]
+    end
+    PE -- "范式升级" --- CE
+    SP --> B
+    TR --> B
+    HI --> B
+    EK --> B
+    B --> L
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class PE1,B proc
+    class SP,TR,HI,EK store
+    class L agent
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  Prompt Engineering                      │
-│   "如何措辞、格式化一条指令以获得更好的输出"                  │
-│   ┌─────────────────────────────┐                       │
-│   │  System Prompt 写作技巧     │                       │
-│   │  Few-shot 示例设计          │                       │
-│   │  CoT / ReAct 格式           │                       │
-│   └─────────────────────────────┘                       │
-└─────────────────────────────────────────────────────────┘
-                        │
-                        ▼ 范式升级
-┌─────────────────────────────────────────────────────────┐
-│                 Context Engineering                      │
-│   "如何为 LLM 构建正确的、完整的决策上下文"                  │
-│   ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│   │ System   │ │ Tool     │ │ History  │ │ External │  │
-│   │ Prompt   │ │ Results  │ │ 对话历史  │ │ Knowledge│  │
-│   └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
-│        │            │            │            │          │
-│        └────────────┴─────┬──────┴────────────┘          │
-│                           ▼                              │
-│               ┌───────────────────┐                      │
-│               │  动态上下文组装器  │                      │
-│               │ (Context Builder) │                      │
-│               └─────────┬─────────┘                      │
-│                         ▼                                │
-│               ┌───────────────────┐                      │
-│               │   LLM 调用入口    │                      │
-│               └───────────────────┘                      │
-└─────────────────────────────────────────────────────────┘
-```
+
+*Context Engineering：四路上下文经组装器按预算与优先级合流进 LLM，而非打磨单条 Prompt。*
 
 ### 四大上下文来源
 
@@ -270,23 +266,35 @@ Turn 15: System(2K) + History(40K) + ToolResults(85K)      = 127K tokens 💥
 
 2026 年，Context Engineering 已从"新概念"成长为**行业共识与独立工程学科**。Anthropic 发布的官方工程指南将其定义为"为 LLM 的上下文窗口填入恰好够用的信息"的精密工程，核心是把上下文窗口视为一个**需要持续维护的有限资源**，而非静态容器。
 
+```mermaid
+flowchart TD
+    subgraph W["① 写入上下文（Write）"]
+        A1["检索 RAG"]
+        A2["工具结果"]
+        A3["系统提示"]
+    end
+    subgraph M["② 管理上下文（Manage）"]
+        B1["压缩 / 摘要"]
+        B2["裁剪 / 截断"]
+        B3["滑动窗口"]
+    end
+    subgraph P["③ 跨会话持久化（Agentic Memory）"]
+        C1["文件式记忆"]
+        C2["写笔记到窗口外"]
+        C3["下次会话读回"]
+    end
+    W --- M
+    M --- P
+    M --> N["上下文窗口 ≠ 记忆<br/>它是「工作台」，不是「档案柜」"]
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A1,A2,A3,C1,C2,C3 store
+    class B1,B2,B3 proc
+    class N neutral
 ```
-Context Engineering 的信息生命周期（Anthropic 框架）
 
-  写入上下文           管理上下文           跨会话持久化
-  (Write)             (Manage)            (Agentic Memory)
-     │                    │                     │
-     ▼                    ▼                     ▼
- ┌─────────┐       ┌───────────┐        ┌──────────────┐
- │ 检索 RAG │       │ 压缩 / 摘要 │        │ 文件式记忆    │
- │ 工具结果 │ ────► │ 裁剪 / 截断│ ────►  │ 写笔记到窗口外 │
- │ 系统提示 │       │ 滑动窗口   │        │ 下次会话读回   │
- └─────────┘       └───────────┘        └──────────────┘
-                          │
-                          ▼
-                   上下文窗口 ≠ 记忆
-                   它是"工作台"，不是"档案柜"
-```
+*上下文是工作台不是档案柜：写入 → 窗口内压缩管理 → 外化为跨会话记忆。*
 
 三个关键认知升级：
 

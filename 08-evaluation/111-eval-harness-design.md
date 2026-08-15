@@ -24,35 +24,23 @@
 
 "benchmark"在日常对话中常被混用，但 Inspect AI 的设计明确把评测拆为四个独立原语：
 
+```mermaid
+flowchart TD
+    B["Benchmark<br/>题库 + 评分标准"]
+    subgraph H["Eval Harness（考场）"]
+        T["Task Loader<br/>加载样本 + 组装 prompt"] --> S["Solver<br/>如何作答（ReAct / 多智能体）"]
+        S --> X["Sandbox<br/>Docker / k8s / Proxmox"]
+        X --> C["Scorer<br/>精确匹配 / 单元测试 / LLM Judge"]
+    end
+    B --> T
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class B store
+    class T,X,C proc
+    class S agent
 ```
-Benchmark（题库 + 评分标准）
-    │
-    ▼
-┌─────────────────────────────────────────────┐
-│              Eval Harness（考场）            │
-│                                             │
-│  ┌──────────────┐    ┌──────────────────┐  │
-│  │ Task Loader  │───►│ Solver           │  │
-│  │ (加载样本)    │    │ (如何让模型作答)  │  │
-│  │ + prompt组装 │    │ (ReAct/MultiAgent)│  │
-│  └──────────────┘    └────────┬─────────┘  │
-│                               │             │
-│                               ▼             │
-│                      ┌────────────────┐    │
-│                      │ Sandbox        │    │
-│                      │ (Docker/k8s/   │    │
-│                      │  Proxmox/Local)│    │
-│                      └────────┬───────┘    │
-│                               │             │
-│                               ▼             │
-│                      ┌────────────────┐    │
-│                      │ Scorer         │    │
-│                      │ (精确匹配/单元 │    │
-│                      │  测试/LLM Judge│    │
-│                      │  /DB diff)     │    │
-│                      └────────────────┘    │
-└─────────────────────────────────────────────┘
-```
+*Harness 是考场：题库只是输入，Task Loader → Solver → Sandbox → Scorer 四原语才决定分数。*
 
 | 组件 | 职责 | 代表实现 |
 |------|------|---------|

@@ -185,34 +185,29 @@ class EgressControl:
 
 ### 完整的安全架构
 
+```mermaid
+flowchart TD
+    A["用户请求"] --> IN["输入护栏"]
+    IN --> AG["Agent 推理"]
+    AG --> Q1{"需要调用工具？"}
+    Q1 -- "否" --> R["输出护栏，返回用户"]
+    Q1 -- "是" --> PE["权限策略引擎<br/>OPA / Cedar"]
+    PE --> Q2{"授权？"}
+    Q2 -- "否" --> DEN["拒绝"]
+    Q2 -- "是" --> Q3{"高风险？"}
+    Q3 -- "是" --> HITL["人工审批"]
+    HITL -- "批准" --> SBX["沙箱执行"]
+    Q3 -- "否" --> SBX
+    SBX --> EG["出口控制"]
+    EG -- "结果回灌，继续推理" --> AG
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,IN,PE,SBX,EG,R proc
+    class Q1,Q2,Q3,HITL,DEN decision
+    class AG agent
 ```
-用户请求 → [输入护栏] → Agent 推理
-                            ↓
-                    需要调用工具？
-                    ↓           ↓
-                   是           否
-                    ↓            ↓
-            [权限策略引擎]     直接输出
-            (OPA/Cedar)         ↓
-                ↓           [输出护栏]
-            授权？               ↓
-           /     \           返回用户
-         是      否
-          ↓       ↓
-     高风险？   拒绝
-      /    \
-    是      否
-     ↓       ↓
-  [人工审批] [沙箱执行]
-     ↓       ↓
-   批准？  [出口控制]
-    ↓       ↓
-  [沙箱执行] 结果
-     ↓
-  [出口控制]
-     ↓
-   结果 → Agent 继续推理
-```
+*每一跳都设关卡：策略引擎授权、高危转人工审批、执行进沙箱、出网过出口控制，结果才回灌 Agent。*
 
 ## 常见误区 / 面试追问
 

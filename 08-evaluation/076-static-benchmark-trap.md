@@ -166,6 +166,26 @@ dynamic_benchmarks = {
 
 ### 正确的评估策略
 
+```mermaid
+flowchart LR
+    A["候选模型"] --> B["Layer 1<br/>公开基准初筛"]
+    B -- "不达标" --> X["淘汰"]
+    B --> C["Layer 2<br/>领域专属评估（决策依据）"]
+    C -- "不达标" --> X
+    C --> D["Layer 3<br/>小流量在线 A/B"]
+    D -- "不达标" --> X
+    D --> E["Layer 4<br/>安全与合规测试"]
+    E -- "不达标" --> X
+    E --> F["上线"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class B,C,D,E proc
+    class X err
+    class A,F neutral
+```
+*正确姿势是四层漏斗：公开基准只配初筛，领域数据才是决策依据，任一层不达标即淘汰。*
+
 ```python
 class ProductionEvalStrategy:
     """从静态基准走向生产级评估的策略"""

@@ -31,23 +31,22 @@ VS Code        ─┘              └─→ 数据库 MCP Server
 
 ### MCP 的三层架构
 
+```mermaid
+flowchart TD
+    subgraph H["Host（宿主）：Claude Desktop / Cursor 等 AI 应用"]
+        C1["Client 1"]
+        C2["Client 2"]
+    end
+    S1["MCP Server<br/>(GitHub)"]
+    S2["MCP Server<br/>(Postgres)"]
+    C1 ---|"JSON-RPC 2.0"| S1
+    C2 ---|"JSON-RPC 2.0"| S2
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class C1,C2 proc
+    class S1,S2 neutral
 ```
-┌─────────────────────────────────────────┐
-│              Host（宿主）                │
-│  AI 应用（Claude Desktop, Cursor 等）     │
-│                                         │
-│  ┌──────────┐  ┌──────────┐             │
-│  │ Client 1 │  │ Client 2 │  ...        │
-│  └────┬─────┘  └────┬─────┘             │
-└───────┼──────────────┼──────────────────┘
-        │              │
-   JSON-RPC 2.0   JSON-RPC 2.0
-        │              │
-┌───────┴───┐    ┌─────┴─────┐
-│ MCP Server│    │ MCP Server│
-│ (GitHub)  │    │ (Postgres)│
-└───────────┘    └───────────┘
-```
+*Host 内嵌多个 Client，每个 Client 与一个 Server 一对一连接，JSON-RPC 2.0 是唯一通用语。*
 
 **三个角色：**
 - **Host**：AI 应用（如 Claude Desktop、Cursor IDE），接收用户请求
@@ -109,18 +108,19 @@ MCP 基于 JSON-RPC 2.0，支持两种传输方式：
 
 **连接生命周期：**
 
+```mermaid
+sequenceDiagram
+    participant C as MCP Client
+    participant S as MCP Server
+    C->>S: initialize（协议版本 + 能力）
+    S-->>C: initialize 响应（返回支持的能力）
+    C->>S: initialized 通知（确认初始化完成）
+    C->>S: tools/list（发现可用工具）
+    S-->>C: 工具列表（含 inputSchema）
+    C->>S: tools/call（调用工具）
+    S-->>C: 执行结果
 ```
-Client                    Server
-  │─── initialize ──────→│  # 发送协议版本和能力
-  │←── initialize 响应 ───│  # 返回支持的能力
-  │─── initialized 通知 ─→│  # 确认初始化完成
-  │                        │
-  │─── tools/list ────────→│  # 发现可用工具
-  │←── 工具列表 ───────────│
-  │                        │
-  │─── tools/call ────────→│  # 调用工具
-  │←── 执行结果 ───────────│
-```
+*initialize 握手、tools/list 发现、tools/call 调用——工具是运行时发现的，不是启动时写死的。*
 
 ### 动态工具发现
 
@@ -273,23 +273,14 @@ MCP 的版本管理分三层，理解这三层是保障生产稳定性的前提�
 
 MCP 的开放性——任何人都能发布 Server——使得 Server 治理成为生产化的核心议题。这与 [工具使用安全](030-tool-use-security.md)（`#030`）和 [权限最小化与沙箱执行](../09-safety-and-alignment/081-least-privilege-sandboxing.md)（`#081`）讨论的原则一脉相承，MCP 场景下的具体风险与对策如下：
 
-```
-MCP Server 生产安全风险全景：
+**MCP Server 生产安全风险全景：**
 
-风险                           对策
-────────────────────────────────────────────────────────────
-Tool Poisoning                 Server 签名验证 + 来源白名单
-（恶意 Server 注册伪装工具）       只从可信 Registry 或内部仓库加载
-
-Confused Deputy                最小权限 + 高危操作 HITL 确认
-（被 Prompt Injection 诱导越权）    删除/转账等操作需二次人工确认
-
-凭证泄露                       OAuth 替代静态 API Key
-（API Key 随 Server 分发流转）     Token 有 scope + 过期 + 可撤销
-
-数据外泄                       出口网络白名单 + 审计日志
-（Server 偷偷外传敏感数据）        每个 Server 只允许访问必要域名
-```
+| 风险 | 对策 |
+|------|------|
+| Tool Poisoning（恶意 Server 注册伪装工具） | Server 签名验证 + 来源白名单；只从可信 Registry 或内部仓库加载 |
+| Confused Deputy（被 Prompt Injection 诱导越权） | 最小权限 + 高危操作 HITL 确认；删除/转账等操作需二次人工确认 |
+| 凭证泄露（API Key 随 Server 分发流转） | OAuth 替代静态 API Key；Token 有 scope + 过期 + 可撤销 |
+| 数据外泄（Server 偷偷外传敏感数据） | 出口网络白名单 + 审计日志；每个 Server 只允许访问必要域名 |
 
 生产级部署应将每个 MCP Server 运行在独立沙箱中（容器或微 VM），限制其文件系统访问范围、网络出口和资源配额。沙箱选型可参考 [Agent Sandbox / Runtime 选型](../10-production-and-deployment/112-agent-sandbox-runtime.md)（`#112`）中的隔离强度对比。
 
@@ -382,18 +373,17 @@ MCP 在生产环境中面临一系列实际挑战，以下是高频问题和对�
 
 这是 MCP 最突出的问题。工具定义本身会消耗大量 context 空间：
 
-```
-实际 Token 消耗：
-MCP Server      工具数量    Token 消耗
-─────────────────────────────────────
-Linear           23        ~12,935
-JetBrains        20        ~12,252
-Playwright       21        ~9,804
-GitHub           15        ~8,500
-─────────────────────────────────────
-总计（4个Server） ~79       ~43,991 tokens
+**实际 Token 消耗：**
+
+| MCP Server | 工具数量 | Token 消耗 |
+|-----------|---------|-----------|
+| Linear | 23 | ~12,935 |
+| JetBrains | 20 | ~12,252 |
+| Playwright | 21 | ~9,804 |
+| GitHub | 15 | ~8,500 |
+| **总计（4个Server）** | ~79 | ~43,991 tokens |
+
 → 占 Claude 200k context 的 ~22%！
-```
 
 **Code Execution 模式**是最有效的解决方案——将工具暴露为代码 API 而非独立 tool schema，token 消耗可从 ~150k 降至 ~2k（节省 98%+）。此外还有**渐进式披露**（根据当前任务只加载最相关的工具）和**最小化 Schema**（去掉冗余描述，只保留核心信息）。
 

@@ -11,24 +11,40 @@ Agent 系统的可观测性需要**全新的监控栈**——传统软件的日�
 
 ### 为什么传统监控不够
 
-```
-传统 Web 服务监控：                Agent 系统需要的监控：
-├── HTTP 状态码（200/500）         ├── 输出质量评分（语义层面）
-├── 响应时间                       ├── 多步执行的完整轨迹
-├── CPU/内存使用率                 ├── Token 消耗和成本
-├── 错误率                         ├── 幻觉检测
-└── 吞吐量                         ├── 安全护栏触发率
-                                   ├── Prompt 漂移检测
-                                   ├── 工具调用成功率
-                                   └── 模型版本变化追踪
+| 传统 Web 服务监控 | Agent 系统需要的监控 |
+| --- | --- |
+| HTTP 状态码（200/500） | 输出质量评分（语义层面） |
+| 响应时间 | 多步执行的完整轨迹 |
+| CPU/内存使用率 | Token 消耗和成本 |
+| 错误率 | 幻觉检测 |
+| 吞吐量 | 安全护栏触发率 |
+| | Prompt 漂移检测 |
+| | 工具调用成功率 |
+| | 模型版本变化追踪 |
 
-核心区别：
-Agent 的"失败"通常不是崩溃，而是质量退化——
-API 返回 200，输出看似合理，但实际不准确或不安全。
-这种"静默失败"只有通过语义级别的监控才能发现。
-```
+核心区别：Agent 的“失败”通常不是崩溃，而是质量退化——API 返回 200，输出看似合理，但实际不准确或不安全。这种“静默失败”只有通过语义级别的监控才能发现。
 
 ### 三层可观测性架构
+
+```mermaid
+flowchart TD
+    subgraph L1["Layer 1 · 结构化日志"]
+        A["记内容：输入/输出、工具调用、<br/>Token 与成本、护栏触发"]
+    end
+    subgraph L2["Layer 2 · 分布式追踪"]
+        B["记路径：Trace/Span 树，<br/>每步推理 · 工具调用 · LLM 交互"]
+    end
+    subgraph L3["Layer 3 · 指标 + 智能告警"]
+        C["盯趋势：质量 / 性能 / 成本 / 安全，<br/>偏离基线自动告警"]
+    end
+    L1 --- L2
+    L2 --- L3
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class A,B store
+    class C proc
+```
+*三层可观测性：日志记内容、Trace 记路径、指标+告警盯趋势——Agent 的静默失败只有语义层抓得到。*
 
 ```python
 # Layer 1: 结构化日志
@@ -187,25 +203,21 @@ alert_rules = {
 
 ### 监控平台选择
 
-```
-┌────────────────┬───────────┬─────────────────────────────┐
-│ 平台           │ 类型      │ 适用场景                    │
-├────────────────┼───────────┼─────────────────────────────┤
-│ Langfuse       │ 开源      │ 预算有限 + 需要自部署       │
-│ LangSmith      │ 商业      │ LangChain/LangGraph 生态    │
-│ Datadog LLM    │ 企业级    │ 已有 Datadog + 需要统一监控 │
-│ Braintrust     │ 商业      │ 评估+监控一体化             │
-│ Maxim AI       │ 商业      │ Agent 评估+可观测全栈       │
-│ Opik (Comet)   │ 开源/商业 │ 多 Agent 工作流监控         │
-│ LangWatch      │ 商业      │ 实时评估+监控+告警          │
-└────────────────┴───────────┴─────────────────────────────┘
+| 平台 | 类型 | 适用场景 |
+| --- | --- | --- |
+| Langfuse | 开源 | 预算有限 + 需要自部署 |
+| LangSmith | 商业 | LangChain/LangGraph 生态 |
+| Datadog LLM | 企业级 | 已有 Datadog + 需要统一监控 |
+| Braintrust | 商业 | 评估+监控一体化 |
+| Maxim AI | 商业 | Agent 评估+可观测全栈 |
+| Opik (Comet) | 开源/商业 | 多 Agent 工作流监控 |
+| LangWatch | 商业 | 实时评估+监控+告警 |
 
 选择建议：
-├── 小团队/起步 → Langfuse（免费开源）
-├── LangChain 技术栈 → LangSmith
-├── 企业级/已有 Datadog → Datadog LLM Observability
-└── 专注评估质量 → Braintrust
-```
+- 小团队/起步 → Langfuse（免费开源）
+- LangChain 技术栈 → LangSmith
+- 企业级/已有 Datadog → Datadog LLM Observability
+- 专注评估质量 → Braintrust
 
 ## 常见误区 / 面试追问
 

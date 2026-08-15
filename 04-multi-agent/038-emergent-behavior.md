@@ -56,15 +56,17 @@ agent_prompt = """
 
 #### 1. 级联幻觉（Cascading Hallucination）
 
+```mermaid
+flowchart TD
+    A["Agent A<br/>产生一个小错误"] --> B["Agent B<br/>基于错误输出推理，错误放大"]
+    B --> C["Agent C<br/>综合 A、B 输出，错误复合"]
+    C --> D["最终输出<br/>看似合理却完全错误"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C agent
+    class D err
 ```
-Agent A 产生一个小错误
-    ↓
-Agent B 基于 A 的错误输出做推理 → 错误被放大
-    ↓
-Agent C 综合 A、B 的输出 → 错误被进一步复合
-    ↓
-最终输出：看似合理但完全错误的结论
-```
+*级联幻觉：Agent A 的小错误被 B 放大、被 C 复合，最终输出看似合理却完全错误。*
 
 #### 2. 从众效应（Peer Pressure / Sycophancy）
 
@@ -176,14 +178,11 @@ evaluation_dimensions = {
 
 ### 涌现 vs 可控性的权衡
 
-```
-完全可控              平衡点              完全自主
-│←────────────────────┼────────────────────→│
-│ 确定性工作流        │ 引导式涌现          │ 无约束涌现
-│ 无涌现              │ 有监控的自主性      │ 不可预测
-│ Pipeline 模式       │ Hybrid 拓扑         │ 全连接对话
-│ 安全但无创新        │ 最佳实践            │ 创新但危险
-```
+| 区间 | 模式 | 涌现/评价 |
+|------|------|----------|
+| 完全可控 | 确定性工作流（Pipeline 模式） | 无涌现；安全但无创新 |
+| 平衡点 | 引导式涌现（Hybrid 拓扑，有监控的自主性） | 最佳实践 |
+| 完全自主 | 无约束涌现（全连接对话） | 不可预测；创新但危险 |
 
 ## 常见误区 / 面试追问
 

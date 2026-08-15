@@ -60,80 +60,42 @@ rl_paradigms = {
 
 ### 完整训练流程
 
+```mermaid
+flowchart TD
+    A["阶段 1：SFT 冷启动<br/>少量高质量轨迹学工具调用"] --> B["阶段 2：奖励函数定义<br/>完成度/工具准确/简洁/格式"]
+    B --> C["阶段 3：GRPO 策略优化<br/>同 prompt G 条轨迹组内相对更新"]
+    C --> D["阶段 4（可选）：拒绝采样+二次 SFT<br/>筛高奖励轨迹回灌蒸馏"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,B,D proc
+    class C agent
 ```
-Agentic-RL 训练 Pipeline：
-
-阶段 1: SFT 冷启动
-┌─────────────────────────────────────────────────┐
-│  收集少量高质量 Agent 轨迹（人工标注或专家模型生成）  │
-│  → 监督微调，让模型学会基本的工具调用格式和流程       │
-│  → 输出：会调用工具但策略粗糙的基座 Agent            │
-└─────────────────────────┬───────────────────────┘
-                          ↓
-阶段 2: 奖励函数定义
-┌─────────────────────────────────────────────────┐
-│  设计多维度奖励信号（规则 + 模型混合）：              │
-│  ├─ 任务完成度：最终结果是否正确（0/1 或连续分）      │
-│  ├─ 工具使用准确率：调用了正确的工具和参数            │
-│  ├─ 步骤简洁性：用更少步骤完成任务                   │
-│  └─ 格式遵循度：输出符合预期的结构化格式             │
-└─────────────────────────┬───────────────────────┘
-                          ↓
-阶段 3: GRPO / PPO 策略优化
-┌─────────────────────────────────────────────────┐
-│  对同一 prompt 采样 G 个完整 Agent 轨迹              │
-│  → 用奖励函数为每条轨迹打分                         │
-│  → 计算组内相对 advantage（GRPO）                    │
-│  → 更新策略，提升高奖励轨迹的概率                    │
-│  → 迭代直到收敛                                    │
-└─────────────────────────┬───────────────────────┘
-                          ↓
-阶段 4（可选）: 拒绝采样 + 二次 SFT
-┌─────────────────────────────────────────────────┐
-│  用 RL 模型生成大量轨迹，筛选高奖励的作为新 SFT 数据  │
-│  → 进一步蒸馏 RL 学到的策略到监督学习中               │
-└─────────────────────────────────────────────────┘
-```
+*Agentic-RL 四段流水线：SFT 冷启动→奖励定义（四维）→GRPO 组内优化→拒绝采样回灌二次 SFT。*
 
 ### GRPO vs PPO：核心算法差异
 
+```mermaid
+flowchart TD
+    subgraph PPOL["PPO —— 需要额外 Critic"]
+        A1["Actor<br/>策略网络"] --> A2["生成响应"]
+        A2 --> A3["Critic Model<br/>估计 V(s)"]
+        A3 --> A4["Advantage<br/>= R - V(s)"]
+        A4 --> A5["PPO Clipping<br/>更新 Actor"]
+    end
+    subgraph GRPOL["GRPO —— 无需 Critic"]
+        B1["Policy<br/>策略网络"] --> B2["同一 prompt<br/>采样 G 个响应"]
+        B2 --> B3["逐条计算奖励<br/>r1 … rG"]
+        B3 --> B4["组内标准化<br/>A = (r - mean) / std"]
+        B4 --> B5["带 KL 惩罚<br/>更新 Policy"]
+    end
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A2,A4,A5,B2,B3,B4,B5 proc
+    class A1,B1 agent
+    class A3 neutral
 ```
-PPO（Proximal Policy Optimization）：
-┌──────────┐   ┌──────────┐   ┌──────────────┐
-│ Actor    │ → │ 生成响应  │ → │ Critic Model │
-│ (策略网络)│   │          │   │ 估计 V(s)    │
-└──────────┘   └──────────┘   └──────┬───────┘
-                                     ↓
-                              Advantage = R - V(s)
-                              (需要额外训练一个 Critic)
-                                     ↓
-                              ┌──────────────┐
-                              │ PPO Clipping  │
-                              │ 更新 Actor    │
-                              └──────────────┘
-
-GRPO（Group Relative Policy Optimization）：
-┌──────────┐   ┌───────────────────┐
-│ Policy   │ → │ 同一 prompt 采样   │
-│ (策略网络)│   │ G 个响应           │
-└──────────┘   └────────┬──────────┘
-                        ↓
-               ┌────────────────────┐
-               │ 每个响应计算奖励 r_i │
-               │ r_1, r_2, ..., r_G │
-               └────────┬──────────┘
-                        ↓
-               ┌────────────────────────────┐
-               │ 组内标准化：                 │
-               │ Â_i = (r_i - mean) / std   │
-               │ → 不需要 Critic Model！      │
-               └────────┬──────────────────┘
-                        ↓
-               ┌────────────────────┐
-               │ 带 KL 惩罚的策略更新 │
-               │ 更新 Policy         │
-               └────────────────────┘
-```
+*PPO 要额外训练 Critic 估 V(s)，GRPO 用同 prompt G 条响应的组内相对排名替代 Critic。*
 
 ```python
 import torch
@@ -237,20 +199,15 @@ class GRPOTrainer:
 
 ### GRPO vs PPO 对比表
 
-```
-┌─────────────────┬──────────────────────┬──────────────────────┐
-│ 维度             │ PPO                  │ GRPO                 │
-├─────────────────┼──────────────────────┼──────────────────────┤
-│ Critic Model    │ 需要（额外训练开销大） │ 不需要（节省 ~50% 显存）│
-│ Advantage 计算  │ A = R - V(s)         │ A = (r-mean)/std     │
-│                 │ 依赖 Value Function  │ 依赖组内相对排名       │
-│ 采样方式         │ 每个 prompt 1 个响应  │ 每个 prompt G 个响应  │
-│ 训练稳定性       │ 依赖 Critic 质量     │ 依赖组大小 G         │
-│ 显存占用         │ Actor + Critic       │ 仅 Policy + Ref      │
-│ 代表应用         │ ChatGPT/InstructGPT  │ DeepSeek-R1          │
-│ 适合场景         │ 通用 RLHF            │ 可验证奖励的任务       │
-└─────────────────┴──────────────────────┴──────────────────────┘
-```
+| 维度 | PPO | GRPO |
+|------|-----|------|
+| Critic Model | 需要（额外训练开销大） | 不需要（节省 ~50% 显存） |
+| Advantage 计算 | A = R - V(s)<br>依赖 Value Function | A = (r-mean)/std<br>依赖组内相对排名 |
+| 采样方式 | 每个 prompt 1 个响应 | 每个 prompt G 个响应 |
+| 训练稳定性 | 依赖 Critic 质量 | 依赖组大小 G |
+| 显存占用 | Actor + Critic | 仅 Policy + Ref |
+| 代表应用 | ChatGPT/InstructGPT | DeepSeek-R1 |
+| 适合场景 | 通用 RLHF | 可验证奖励的任务 |
 
 ### 奖励函数设计：Agentic-RL 的核心难点
 

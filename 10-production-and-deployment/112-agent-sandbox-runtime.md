@@ -148,35 +148,33 @@ check_host(malicious)  # True ✓ 因为字符串以 ".google.com" 结尾
 
 #### 业界已收敛的最佳实践（OWASP / NVIDIA / Microsoft 共识）
 
+```mermaid
+flowchart TD
+    subgraph L1["Layer 1 · Default-deny"]
+        A["默认拒绝所有 outbound<br/>显式 allowlist 才放行"]
+    end
+    subgraph L2["Layer 2 · 三层独立防御（不依赖单点）"]
+        B["env 隔离 ｜ DNS resolver 锁定<br/>｜ iptables 网络 host 不可直达"]
+    end
+    subgraph L3["Layer 3 · 阻断元数据 / 内网"]
+        C["169.254.169.254（IMDS）· RFC1918<br/>（10/8、172.16、192.168）· localhost/link-local"]
+    end
+    subgraph L4["Layer 4 · 连接时验 IP（防 DNS rebinding）"]
+        D["不光验 DNS 名，验解析后的 IP<br/>首次允许、二次变攻击者 IP 即拦截"]
+    end
+    subgraph L5["Layer 5 · Token Broker（凭证不下放）"]
+        E["Outbound Worker：agent 持短期 JWT<br/>proxy 替换为真实 token"]
+    end
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
+    L4 --- L5
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B,C,D proc
+    class E neutral
 ```
-            完整的 Egress 防御栈
-┌──────────────────────────────────────────────┐
-│ Layer 1: Default-deny                        │
-│   - 默认拒绝所有 outbound                    │
-│   - 显式 allowlist 才放行                    │
-├──────────────────────────────────────────────┤
-│ Layer 2: 三层独立防御（不依赖单点）           │
-│   ┌──────────┬──────────┬─────────────────┐ │
-│   │ env 隔离 │  DNS     │ iptables/网络   │ │
-│   │          │ resolver │ host 不可直达   │ │
-│   │          │ 锁定     │                 │ │
-│   └──────────┴──────────┴─────────────────┘ │
-├──────────────────────────────────────────────┤
-│ Layer 3: 阻断元数据 / 内网                   │
-│   - 169.254.169.254 (cloud IMDS)             │
-│   - RFC1918 (10.0.0.0/8 / 172.16.x / 192.168)│
-│   - localhost / link-local                   │
-├──────────────────────────────────────────────┤
-│ Layer 4: 连接时验 IP（防 DNS rebinding）     │
-│   - 不光验 DNS 名，验解析后的 IP             │
-│   - 首次返回允许 IP，第二次返回攻击者 IP？拦截│
-├──────────────────────────────────────────────┤
-│ Layer 5: Token Broker（凭证不下放）          │
-│   - Outbound Worker 模式                     │
-│   - agent 拿短期 JWT                         │
-│   - proxy 替换为真实 token                   │
-└──────────────────────────────────────────────┘
-```
+*egress 是沙箱最脆的边界：单层 allowlist 必被 parser-differential 绕过，要 default-deny 起步的五层纵深。*
 
 | 防御层 | 阻断的攻击 |
 |--------|-----------|

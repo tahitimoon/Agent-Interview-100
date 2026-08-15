@@ -29,6 +29,25 @@ while not done:
     done = check_termination(state)     # 终止检查
 ```
 
+```mermaid
+flowchart TD
+    T["目标"] --> R["推理<br/>LLM 思考"]
+    R --> A["行动<br/>工具调用"]
+    A --> O["观察<br/>执行结果"]
+    O --> Q1{"目标达成?"}
+    Q1 -- "是" --> F["最终答案"]
+    Q1 -- "否" --> Q2{"达迭代上限?"}
+    Q2 -- "否" --> R
+    Q2 -- "是" --> D["优雅降级<br/>总结进度后返回"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class T,R,A,O,F proc
+    class Q1,Q2 decision
+    class D err
+```
+*Agent Loop = 推理→行动→观察循环，终止由系统保证：目标达成即返回，达上限则优雅降级。*
+
 ### 二、为什么需要终止控制？
 
 与传统代码中显而易见的死循环不同，Agent 的循环陷阱更加微妙：
@@ -148,6 +167,29 @@ Agent 的错误比传统应用更难处理，因为：
 - **概率性**：同样的输入可能产生不同的错误
 
 ### 八、四层容错模型
+
+```mermaid
+flowchart TD
+    E0["错误发生"] --- S1
+    subgraph S1["第一层 —— 重试 + 指数退避 + 抖动"]
+        L1["应对网络超时 / 限流等<br/>瞬态错误，成本最低"]
+    end
+    subgraph S2["第二层 —— 模型降级链"]
+        L2["主模型 → 备用模型<br/>→ 跨供应商回退"]
+    end
+    subgraph S3["第三层 —— 错误分类路由"]
+        L3["瞬态→重试 语义→换法<br/>权限→人工 致命→终止"]
+    end
+    subgraph S4["第四层 —— 检查点恢复"]
+        L4["定期保存状态<br/>崩溃后从检查点重启"]
+    end
+    S1 --- S2 --- S3 --- S4
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class E0 err
+    class L1,L2,L3,L4 proc
+```
+*容错四层防线由廉到贵：重试退避 → 模型降级链 → 错误分类路由 → 检查点恢复，逐层兜底。*
 
 #### 第一层：重试 + 指数退避 + 抖动
 

@@ -123,6 +123,28 @@ response = llm.invoke(context_window)
 
 MemGPT 正是基于这个类比，实现了类似操作系统虚拟内存的机制——自动在"内存"（上下文窗口）和"磁盘"（外部存储）之间移动数据。
 
+```mermaid
+flowchart TD
+    subgraph WM["上下文窗口 ≈ RAM（工作记忆，容量有限）"]
+        SP["System Prompt<br/>（程序记忆）"]
+        CH["对话历史<br/>（短期记忆）"]
+        LT["检索到的长期记忆"]
+        TR["工具结果"]
+    end
+    subgraph EXT["外部存储 ≈ 硬盘（长期记忆，大容量）"]
+        VDB["向量库<br/>语义检索"]
+        RDB["关系库<br/>精确查询"]
+    end
+    EXT -- "检索加载" --> WM
+    WM -- "固化存储" --> EXT
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class SP,CH,LT,TR proc
+    class VDB,RDB store
+```
+
+*工作记忆 = 上下文窗口（RAM），长期记忆 = 外部存储（硬盘），"记忆"全靠工程层在两级之间搬运。*
+
 ### 记忆管理策略
 
 ```python

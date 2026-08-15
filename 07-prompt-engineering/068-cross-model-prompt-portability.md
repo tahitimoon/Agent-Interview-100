@@ -113,6 +113,28 @@ class PromptAdapter:
         return full_prompt, adapter
 ```
 
+```mermaid
+flowchart TD
+    C["核心 Prompt（模型无关）<br/>任务 / 规则 / 风格"]
+    subgraph ADP["模型适配层：新增模型只需加一个适配器"]
+        A1["GPT-4 适配<br/>JSON 输出 wrapper"]
+        A2["Claude 适配<br/>XML 标签 wrapper"]
+        A3["Llama 适配<br/>简洁格式 / 低温度"]
+    end
+    C --> A1
+    C --> A2
+    C --> A3
+    A1 --> M1["GPT-4"]
+    A2 --> M2["Claude"]
+    A3 --> M3["Llama"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class C,A1,A2,A3 proc
+    class M1,M2,M3 neutral
+```
+
+*可移植 Prompt = 模型无关的核心层 + 每模型一个适配层，换模型只加适配器不动核心。*
+
 ### PromptBridge：自动化迁移
 
 ```python

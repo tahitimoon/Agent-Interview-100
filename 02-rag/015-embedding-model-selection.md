@@ -82,14 +82,20 @@ compact = client.embeddings.create(
 
 #### 何时需要微调？
 
+```mermaid
+flowchart TD
+    A{"通用 Embedding<br/>在你的数据上满意？"}
+    A -->|"满意"| B["不需要微调"]
+    A -->|"不满意"| C{"原因是什么？"}
+    C -->|"数据质量问题"| D["先优化数据，不是模型"]
+    C -->|"领域术语不理解"| E["微调"]
+    C -->|"检索逻辑需要定制"| F["微调"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class A,C decision
+    class B,D,E,F proc
 ```
-通用 Embedding 在你的数据上效果如何？
-├── 满意 → 不需要微调
-└── 不满意 → 分析原因
-    ├── 数据质量问题 → 先优化数据，不是模型
-    ├── 领域术语不理解 → 微调
-    └── 检索逻辑需要定制 → 微调
-```
+*微调前先测通用模型：不满意先区分原因——数据质量问题先修数据，领域术语或检索逻辑不匹配才值得微调。*
 
 #### 微调方法
 

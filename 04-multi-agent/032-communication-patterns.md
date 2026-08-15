@@ -143,6 +143,22 @@ class BlackboardSystem:
             self.blackboard.post(active_agent.id, result)
 ```
 
+```mermaid
+flowchart TD
+    A["任务发布上黑板"] --> B["控制器选择 Agent"]
+    B --> C["读取黑板"]
+    C --> D["处理 · 贡献专长"]
+    D --> E["写回黑板"]
+    E --> Q{"问题解决？"}
+    Q -- "否" --> B
+    Q -- "是" --> F["最终方案"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class A,B,C,D,E,F proc
+    class Q decision
+```
+*黑板模式 = 控制器调度下的「读 → 处理 → 写回」循环：Agent 观察黑板自主贡献，迭代直至问题解决。*
+
 **黑板模式的关键特性：**
 - **自愿参与**：Agent 基于自身专长决定是否响应黑板上的请求
 - **迭代精化**：多轮读取-处理-写回，逐步完善解决方案

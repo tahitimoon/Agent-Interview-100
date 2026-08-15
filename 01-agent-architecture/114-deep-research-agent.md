@@ -29,7 +29,14 @@ flowchart TD
     H --> D
     G -- "是" --> I["综合报告合成<br/>多章节 + 内联引用"]
     I --> J["带引用的结构化长报告"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class A,B,D,E,H,I proc
+    class C,F,J store
+    class G decision
 ```
+*Deep Research 的内核是充分性感知的多轮检索循环：证据不足就改写补检，充分才进入带引用的长报告合成。*
 
 这个循环的每一个环节都值得展开，因为它们正是 Deep Research 区别于普通检索增强的关键。
 

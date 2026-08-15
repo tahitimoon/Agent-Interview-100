@@ -11,19 +11,23 @@ LLM 选择工具的核心机制是将用户意图与工具描述做语义匹配�
 
 ### LLM 的工具选择过程
 
+```mermaid
+flowchart TD
+    A["用户请求"] --> B["LLM 分析意图"]
+    B --> Q1{"内部知识可答?"}
+    Q1 -- "是" --> C["直接回答"]
+    Q1 -- "否" --> D["扫描工具描述<br/>语义匹配最佳工具"]
+    D --> Q2{"有匹配工具?"}
+    Q2 -- "是" --> E["生成工具调用请求"]
+    Q2 -- "否" --> F["告知用户无法处理"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q1,Q2 decision
+    class B,C,E,F agent
+    class A,D proc
 ```
-用户请求 → LLM 分析意图
-               │
-     ┌─────────┼───────────────┐
-     │         │               │
- 检查内部     扫描可用工具      无匹配
- 知识能否     的描述            工具
- 直接回答         │
-     │     语义匹配最佳工具
-     │         │
-     ▼         ▼               ▼
- 直接回答   生成工具调用请求   告知用户无法处理
-```
+*工具选择是一次三路决策：内部知识可答则直答，语义匹配到工具则生成调用，否则坦白无法处理。*
 
 Agent 的"大脑"（LLM）负责工具选择逻辑。这不是魔法，而是基于 Prompt 中的指令和工具描述做模式匹配和推理。
 

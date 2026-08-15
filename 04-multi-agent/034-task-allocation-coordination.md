@@ -11,29 +11,18 @@
 
 ### 任务分配的基本流程
 
+```mermaid
+flowchart TD
+    A["复杂任务"] --> B["任务分解 Decompose<br/>将大任务拆成子任务"]
+    B --> C["任务分配 Allocate<br/>将子任务匹配给合适的 Agent"]
+    C --> D["协调执行 Coordinate<br/>管理依赖 · 同步 · 冲突"]
+    D --> E["结果聚合 Aggregate<br/>合并各 Agent 的输出"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class B,C,D,E proc
+    class A neutral
 ```
-复杂任务
-    ↓
-┌──────────────┐
-│  任务分解     │ → 将大任务拆成子任务
-│ (Decompose)  │
-└──────┬───────┘
-       ↓
-┌──────────────┐
-│  任务分配     │ → 将子任务匹配给合适的 Agent
-│ (Allocate)   │
-└──────┬───────┘
-       ↓
-┌──────────────┐
-│  协调执行     │ → 管理依赖、同步、冲突
-│ (Coordinate) │
-└──────┬───────┘
-       ↓
-┌──────────────┐
-│  结果聚合     │ → 合并各 Agent 的输出
-│ (Aggregate)  │
-└──────────────┘
-```
+*任务分配四段流水线：分解 → 分配 → 协调执行 → 聚合，每段解决一个协作问题。*
 
 ### 策略 1：集中式规划，分散执行
 

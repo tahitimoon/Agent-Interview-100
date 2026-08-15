@@ -23,27 +23,23 @@ Reflexion 是最有影响力的 Agent 自我反思框架，核心思想是用**�
 
 #### 三个核心组件
 
+```mermaid
+flowchart TD
+    T["任务"] --> A["Actor<br/>执行任务，生成轨迹"]
+    A --> E["Evaluator<br/>评估成功 / 失败"]
+    E --> Q{"达标?"}
+    Q -- "是" --> F["最终答案"]
+    Q -- "否" --> S["Self-Reflect<br/>生成语言化反思"]
+    S --> M["长期记忆<br/>存储反思文本"]
+    M -->|"带反思重新执行"| A
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class A,E,S agent
+    class M store
+    class Q decision
 ```
-┌─────────────┐
-│    Actor     │ ←── 执行任务，生成行动轨迹（Trajectory）
-└──────┬──────┘
-       │ 轨迹 + 结果
-       ▼
-┌─────────────┐
-│  Evaluator   │ ←── 评估执行结果（成功/失败/部分成功）
-└──────┬──────┘
-       │ 评估信号
-       ▼
-┌─────────────┐
-│ Self-Reflect │ ←── 基于评估生成语言化的反思
-└──────┬──────┘     "我在第 3 步选错了工具，应该用 X 而非 Y"
-       │ 反思文本
-       ▼
-┌─────────────┐
-│ Long-term   │ ←── 存储反思，供下次迭代参考
-│   Memory    │
-└─────────────┘
-```
+*Reflexion 用语言反馈代替梯度更新：评估失败后生成语言化反思存入长期记忆，下一轮带着反思重新执行。*
 
 #### 执行流程
 
